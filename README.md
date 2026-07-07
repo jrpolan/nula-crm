@@ -11,17 +11,17 @@ Next.js CRM for managing client profiles with Less Annoying CRM (LACRM) integrat
 
 ## Getting started
 
+See **[docs/setup.md](docs/setup.md)** for the full flow: publish to GitHub, Neon database, first admin invite, Vercel deploy, and Cursor Cloud.
+
+Quick local start:
+
 ```bash
 cp .env.example .env.local
 npm install
+npm run db:migrate
+BOOTSTRAP_ADMIN_EMAIL=you@example.com npm run db:bootstrap
 npm run dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### First user
-
-Sign-up is invite-only. For local development, insert a pending row in `team_invites` for your email, then register at `/login`.
 
 ## Cursor Cloud
 

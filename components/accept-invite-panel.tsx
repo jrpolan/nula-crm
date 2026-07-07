@@ -70,15 +70,15 @@ export function AcceptInvitePanel({
         </div>
         <div className="flex flex-col gap-4">
           <h1 className="text-4xl font-semibold leading-tight tracking-tight text-balance">
-            {"Spackle: AI the sh%$ out of it!"}
+            Client management, simplified.
           </h1>
           {invitedBy && (
             <p className="text-base text-primary-foreground/80 text-pretty">
-              {invitedBy} invited you to join the team workspace.
+              {invitedBy} invited you to join the Nula CRM workspace.
             </p>
           )}
         </div>
-        <p className="text-sm text-primary-foreground/60">VS Marketing internal tool</p>
+        <p className="text-sm text-primary-foreground/60">Nula CRM</p>
       </div>
 
       {/* Sign-up form */}

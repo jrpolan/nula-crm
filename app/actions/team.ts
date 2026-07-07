@@ -219,8 +219,16 @@ export async function acceptTeamInvite(token: string): Promise<{ ok: boolean }> 
     throw new Error("This invite was issued for a different email address.")
   }
 
+  // Bootstrap owner invite uses workspaceId "__bootstrap__". The first accepted
+  // invite becomes the workspace owner and inherits their user id as workspaceId.
+  let workspaceId = invite.workspaceId
+  if (workspaceId === "__bootstrap__") {
+    workspaceId = acting.id
+    await db.update(teamInvites).set({ workspaceId: acting.id }).where(eq(teamInvites.id, token))
+  }
+
   // Bind the new user to the inviting workspace (shared data) and close the invite.
-  await db.update(userTable).set({ workspaceId: invite.workspaceId }).where(eq(userTable.id, acting.id))
+  await db.update(userTable).set({ workspaceId }).where(eq(userTable.id, acting.id))
   await db
     .update(teamInvites)
     .set({ status: "Accepted", acceptedAt: new Date(), acceptedByUserId: acting.id })

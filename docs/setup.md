@@ -1,0 +1,78 @@
+# Nula CRM setup
+
+## 1. Publish the scaffold to `jrpolan/nula-crm`
+
+The cloud agent pushed the full scaffold to:
+
+`https://github.com/VandalsSmile/vs-spackle/tree/cursor/nula-crm-scaffold-054a`
+
+Mirror it into your repo (requires your GitHub credentials):
+
+```bash
+chmod +x scripts/publish-to-jrpolan.sh
+./scripts/publish-to-jrpolan.sh
+```
+
+Or manually:
+
+```bash
+git clone --branch cursor/nula-crm-scaffold-054a https://github.com/VandalsSmile/vs-spackle.git nula-crm
+cd nula-crm
+git remote add origin https://github.com/jrpolan/nula-crm.git
+git push -u origin HEAD:main
+```
+
+## 2. Create a Neon database
+
+1. Create a project at [https://neon.tech](https://neon.tech)
+2. Copy the pooled PostgreSQL connection string
+3. Set it as `DATABASE_URL`
+
+## 3. Configure environment variables
+
+Copy `.env.example` to `.env.local` and fill in:
+
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | Neon PostgreSQL connection string |
+| `BETTER_AUTH_SECRET` | Random 32+ char secret (`openssl rand -base64 32`) |
+| `BETTER_AUTH_URL` | Production app URL |
+| `NEXT_PUBLIC_APP_URL` | Same as `BETTER_AUTH_URL` |
+| `BLOB_READ_WRITE_TOKEN` | Optional, for brand logo uploads |
+
+For Vercel, add the same values in **Project → Settings → Environment Variables**.
+
+## 4. Run migrations
+
+```bash
+npm install
+npm run db:migrate
+```
+
+## 5. Create the first admin invite
+
+```bash
+BOOTSTRAP_ADMIN_EMAIL=you@example.com npm run db:bootstrap
+```
+
+Open the printed `/accept-invite/...` URL, set your password, then use `/login`.
+
+## 6. Deploy to Vercel
+
+```bash
+npx vercel link
+npx vercel env pull .env.local
+npx vercel --prod
+```
+
+Or connect `jrpolan/nula-crm` in the Vercel dashboard and import the repo.
+
+After the first deploy, update `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` to your production domain.
+
+## 7. Cursor Cloud environment
+
+After the repo is on GitHub:
+
+[Open guided environment setup](https://cursor.com/onboard?repository=https%3A%2F%2Fgithub.com%2Fjrpolan%2Fnula-crm)
+
+Add `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL` as Cursor secrets for the environment.
