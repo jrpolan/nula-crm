@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Cursor Cloud
 
-This is a **standalone workspace** for `jrpolan/nula-crm` — not VS Spackle.
+This is a **standalone workspace** for `VandalsSmile/nula-crm` — separate from the `vs-spackle` marketing platform.
 
 - Environment setup: `docs/cursor-cloud-workspace.md`
 - Install: `npm install && bash scripts/ensure-github-auth.sh`

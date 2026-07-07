@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# DEPRECATED — Nula CRM is now developed directly in jrpolan/nula-crm.
+# DEPRECATED — Nula CRM is now developed directly in VandalsSmile/nula-crm.
 # This one-time script mirrored an early scaffold from vs-spackle.
 
-# Mirrors the scaffold branch from VandalsSmile/vs-spackle into jrpolan/nula-crm.
-# Run this locally with credentials that can push to jrpolan/nula-crm.
+# Mirrors the scaffold branch from VandalsSmile/vs-spackle into VandalsSmile/nula-crm.
+# Run this locally with credentials that can push to VandalsSmile/nula-crm.
 
 SOURCE_REPO="${SOURCE_REPO:-https://github.com/VandalsSmile/vs-spackle.git}"
 SOURCE_BRANCH="${SOURCE_BRANCH:-cursor/nula-crm-scaffold-054a}"
-TARGET_REPO="${TARGET_REPO:-https://github.com/jrpolan/nula-crm.git}"
+TARGET_REPO="${TARGET_REPO:-https://github.com/VandalsSmile/nula-crm.git}"
 TARGET_BRANCH="${TARGET_BRANCH:-main}"
 
 WORKDIR="${WORKDIR:-/tmp/nula-crm-publish}"

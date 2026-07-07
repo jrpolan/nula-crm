@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Ensures git/gh use jrpolan — not cursor[bot] — in Cursor Cloud agents.
+# Ensures git/gh use your PAT — not cursor[bot] — in Cursor Cloud agents.
 set -euo pipefail
 
-REPO_SLUG="${GITHUB_REPO:-jrpolan/nula-crm}"
+REPO_SLUG="${GITHUB_REPO:-VandalsSmile/nula-crm}"
 
 echo "→ Ensuring GitHub auth for ${REPO_SLUG}..."
 

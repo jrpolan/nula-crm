@@ -27,7 +27,7 @@ npm run dev
 
 Create a cloud development environment for this repo:
 
-**[Open guided environment setup](https://cursor.com/onboard?repository=https%3A%2F%2Fgithub.com%2Fjrpolan%2Fnula-crm)**
+**[Open guided environment setup](https://cursor.com/onboard?repository=https%3A%2F%2Fgithub.com%2FVandalsSmile%2Fnula-crm)**
 
 Cloud agents use `.cursor/environment.json` for install/start commands. See `AGENTS.md` for agent-specific instructions.
 

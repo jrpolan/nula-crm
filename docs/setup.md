@@ -1,13 +1,13 @@
 # Nula CRM setup
 
-Standalone repo: **https://github.com/jrpolan/nula-crm**
+Standalone repo: **https://github.com/VandalsSmile/nula-crm**
 
 For Cursor Cloud agents, use a dedicated environment (not VS Spackle). See **`docs/cursor-cloud-workspace.md`**.
 
 ## 1. Clone the repo
 
 ```bash
-git clone https://github.com/jrpolan/nula-crm.git
+git clone https://github.com/VandalsSmile/nula-crm.git
 cd nula-crm
 npm install
 ```
@@ -24,7 +24,7 @@ npm install
 
 Cursor Cloud injects `cursor[bot]` credentials that override your personal login. Each new agent run may require re-auth unless you add a **personal access token** to your Cursor Cloud environment:
 
-1. Create a fine-grained PAT at [github.com/settings/tokens](https://github.com/settings/tokens) for `jrpolan/nula-crm` with **Contents: Read and write**
+1. Create a fine-grained PAT at [github.com/settings/tokens](https://github.com/settings/tokens) for `VandalsSmile/nula-crm` with **Contents: Read and write**
 2. In Cursor → Cloud → Environment settings, add secret: `GH_TOKEN=<your-pat>`
 3. The install hook runs `scripts/ensure-github-auth.sh` to use that token automatically
 
@@ -69,7 +69,7 @@ npx vercel env pull .env.local
 npx vercel --prod
 ```
 
-Or connect `jrpolan/nula-crm` in the Vercel dashboard and import the repo.
+Or connect `VandalsSmile/nula-crm` in the Vercel dashboard and import the repo.
 
 After the first deploy, update `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` to your production domain.
 
@@ -77,7 +77,7 @@ After the first deploy, update `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` to yo
 
 Create a **dedicated** Cursor Cloud environment for this repo:
 
-[Open guided environment setup](https://cursor.com/onboard?repository=https%3A%2F%2Fgithub.com%2Fjrpolan%2Fnula-crm)
+[Open guided environment setup](https://cursor.com/onboard?repository=https%3A%2F%2Fgithub.com%2FVandalsSmile%2Fnula-crm)
 
 See **`docs/cursor-cloud-workspace.md`** for secrets and migration notes from VS Spackle.
 
