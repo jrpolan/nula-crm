@@ -2,7 +2,19 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, Users, Settings, ChevronsUpDown, LogOut } from "lucide-react"
+import {
+  LayoutDashboard,
+  Users,
+  Layers,
+  Megaphone,
+  Inbox,
+  Zap,
+  Sparkles,
+  BarChart3,
+  Settings,
+  ChevronsUpDown,
+  LogOut,
+} from "lucide-react"
 
 import {
   Sidebar,
@@ -28,13 +40,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Logo } from "@/components/logo"
 import { VersionBadge } from "@/components/version-badge"
-import { initials } from "@/lib/mock-data"
+import { initials } from "@/lib/crm-types"
 import { useSessionUser } from "@/lib/session-context"
 import { authClient } from "@/lib/auth-client"
 
 const mainNav = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Clients", href: "/clients", icon: Users },
+  { title: "Contacts", href: "/contacts", icon: Users },
+  { title: "Groups", href: "/groups", icon: Layers },
+  { title: "Campaigns", href: "/campaigns", icon: Megaphone },
+  { title: "Inbox", href: "/inbox", icon: Inbox },
+  { title: "Automations", href: "/automations", icon: Zap },
+  { title: "AI Command Center", href: "/ai", icon: Sparkles },
+  { title: "Reports", href: "/reports", icon: BarChart3 },
   { title: "Settings", href: "/settings", icon: Settings },
 ]
 
@@ -62,7 +80,7 @@ export function AppSidebar() {
               <span className="text-sm font-semibold tracking-tight">NULA CRM</span>
               <VersionBadge />
             </span>
-            <span className="text-xs text-muted-foreground">Client workspace</span>
+            <span className="text-xs text-muted-foreground">AI-first small business CRM</span>
           </div>
         </Link>
       </SidebarHeader>

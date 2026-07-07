@@ -10,12 +10,18 @@ import { Button } from "@/components/ui/button"
 
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
-  "/clients": "Clients",
+  "/contacts": "Contacts",
+  "/groups": "Groups",
+  "/campaigns": "Campaigns",
+  "/inbox": "Inbox",
+  "/automations": "Automations",
+  "/ai": "AI Command Center",
+  "/reports": "Reports",
   "/settings": "Settings",
 }
 
 function deriveTitle(pathname: string) {
-  if (pathname.startsWith("/clients/")) return "Client Profile"
+  if (pathname.startsWith("/contacts/")) return "Contact Profile"
   const base = "/" + pathname.split("/")[1]
   return titles[base] ?? "Nula CRM"
 }
@@ -30,8 +36,7 @@ export function TopBar() {
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-1 h-6" />
       <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto">
         <Button
           variant="ghost"
           size="icon"

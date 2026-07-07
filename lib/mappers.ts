@@ -1,35 +1,98 @@
-import type { Activity, Client } from "@/lib/mock-data"
-import type { activities, clients } from "@/lib/db/schema"
+import type {
+  Activity,
+  Campaign,
+  CampaignStatus,
+  CampaignType,
+  Contact,
+  CustomerStatus,
+  Deal,
+  DealStage,
+  Group,
+  LeadStatus,
+  LifecycleStage,
+  Tag,
+} from "@/lib/crm-types"
+import { contactFullName } from "@/lib/crm-types"
+import type {
+  activities,
+  campaigns,
+  contacts,
+  deals,
+  groups,
+  tags,
+} from "@/lib/db/schema"
 import { labelForUserId, type UserLabelMap } from "@/lib/workspace-users"
-
-type ClientRow = typeof clients.$inferSelect
-type ActivityRow = typeof activities.$inferSelect
 
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null)
 
-export function mapClient(row: ClientRow): Client {
+type ContactRow = typeof contacts.$inferSelect
+type TagRow = typeof tags.$inferSelect
+type GroupRow = typeof groups.$inferSelect
+type ActivityRow = typeof activities.$inferSelect
+type DealRow = typeof deals.$inferSelect
+type CampaignRow = typeof campaigns.$inferSelect
+
+export function mapTag(row: TagRow): Tag {
   return {
     id: row.id,
     name: row.name,
-    websiteUrl: row.websiteUrl,
-    contactName: row.contactName,
-    contactEmail: row.contactEmail,
+    slug: row.slug,
+    color: row.color,
+    description: row.description,
+  }
+}
+
+export function mapGroup(row: GroupRow, memberCount = 0): Group {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    type: row.type,
+    isSystem: row.isSystem,
+    memberCount,
+  }
+}
+
+export function mapContact(
+  row: ContactRow,
+  extra: { tags?: Tag[]; groups?: Group[] } = {},
+): Contact {
+  const firstName = row.firstName || row.legacyContactName?.split(" ")[0] || row.name || "Contact"
+  const lastName =
+    row.lastName ||
+    row.legacyContactName?.split(" ").slice(1).join(" ") ||
+    row.name?.split(" ").slice(1).join(" ") ||
+    ""
+
+  return {
+    id: row.id,
+    firstName,
+    lastName,
+    fullName: contactFullName(firstName, lastName),
+    email: row.email,
     phone: row.phone,
-    location: row.location,
-    timezone: row.timezone,
-    industry: row.industry,
-    accentColor: row.accentColor,
-    logoUrl: row.logoUrl,
-    brandVoice: row.brandVoice,
-    targetAudience: row.targetAudience,
-    commonServices: row.commonServices,
+    address: row.address,
+    city: row.city,
+    state: row.state,
+    zip: row.zip,
+    source: row.source,
+    lifecycleStage: row.lifecycleStage as LifecycleStage,
+    leadStatus: row.leadStatus as LeadStatus,
+    customerStatus: row.customerStatus as CustomerStatus,
     notes: row.notes,
-    lacrm: {
-      status: row.lacrmStatus as Client["lacrm"]["status"],
-      connectedBy: row.lacrmConnectedBy,
-      lastCheckedAt: iso(row.lacrmLastCheckedAt) ?? "",
-      accountName: row.lacrmAccountName ?? "",
-    },
+    lastContactedAt: iso(row.lastContactedAt),
+    lastActivityAt: iso(row.lastActivityAt),
+    lastPurchaseAt: iso(row.lastPurchaseAt),
+    totalRevenueCents: row.totalRevenueCents,
+    productsPurchased: row.productsPurchased,
+    communicationPreference: row.communicationPreference,
+    optInStatus: row.optInStatus,
+    leadScore: row.leadScore,
+    aiSummary: row.aiSummary,
+    recommendedNextAction: row.recommendedNextAction,
+    tags: extra.tags ?? [],
+    groups: extra.groups ?? [],
     createdAt: iso(row.createdAt) ?? "",
   }
 }
@@ -37,15 +100,44 @@ export function mapClient(row: ClientRow): Client {
 export function mapActivity(
   row: ActivityRow,
   labels: UserLabelMap,
-  clientName = "",
+  contactName = "",
 ): Activity {
   return {
     id: row.id,
     type: row.type,
     message: row.message,
-    clientId: row.clientId,
-    clientName,
+    contactId: row.contactId,
+    contactName,
     actorName: labelForUserId(labels, row.actorId),
     at: iso(row.at) ?? "",
+  }
+}
+
+export function mapDeal(row: DealRow, contactName: string): Deal {
+  return {
+    id: row.id,
+    contactId: row.contactId,
+    contactName,
+    title: row.title,
+    offerInterest: row.offerInterest,
+    stage: row.stage as DealStage,
+    estimatedValueCents: row.estimatedValueCents,
+    probability: row.probability,
+    nextStep: row.nextStep,
+    ownerId: row.ownerId,
+    closeDate: iso(row.closeDate),
+  }
+}
+
+export function mapCampaign(row: CampaignRow): Campaign {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type as CampaignType,
+    status: row.status as CampaignStatus,
+    goal: row.goal,
+    audience: row.audience,
+    groupId: row.groupId,
+    createdAt: iso(row.createdAt) ?? "",
   }
 }

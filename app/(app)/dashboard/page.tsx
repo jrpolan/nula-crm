@@ -1,14 +1,17 @@
-import { getActivities, getClients, getDashboardStats } from "@/lib/queries"
 import { DashboardView } from "./dashboard-view"
+import { seedWorkspaceDefaults } from "@/app/actions/workspace"
+import { getActivities, getContacts, getDashboardStats } from "@/lib/queries"
 
 export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
-  const [clients, activities, stats] = await Promise.all([
-    getClients(),
+  await seedWorkspaceDefaults("iv-therapy")
+
+  const [contacts, activities, stats] = await Promise.all([
+    getContacts(),
     getActivities(10),
     getDashboardStats(),
   ])
 
-  return <DashboardView clients={clients} activities={activities} stats={stats} />
+  return <DashboardView contacts={contacts} activities={activities} stats={stats} />
 }

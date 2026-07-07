@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, boolean, integer, jsonb } from "drizzle-orm/pg-core"
+import type { AiActionPreview } from "@/lib/crm-types"
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -52,30 +53,105 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updatedAt").defaultNow(),
 })
 
-export const clients = pgTable("clients", {
+/** Central CRM contact record (renamed from legacy clients table). */
+export const contacts = pgTable("contacts", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  firstName: text("firstName").notNull().default(""),
+  lastName: text("lastName").notNull().default(""),
+  name: text("name").notNull().default(""),
+  legacyContactName: text("legacyContactName").notNull().default(""),
+  email: text("email").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  address: text("address").notNull().default(""),
+  city: text("city").notNull().default(""),
+  state: text("state").notNull().default(""),
+  zip: text("zip").notNull().default(""),
+  location: text("location").notNull().default(""),
+  source: text("source").notNull().default(""),
+  lifecycleStage: text("lifecycleStage").notNull().default("New Lead"),
+  leadStatus: text("leadStatus").notNull().default("Open"),
+  customerStatus: text("customerStatus").notNull().default("Prospect"),
+  notes: text("notes").notNull().default(""),
+  lastContactedAt: timestamp("lastContactedAt"),
+  lastActivityAt: timestamp("lastActivityAt"),
+  lastPurchaseAt: timestamp("lastPurchaseAt"),
+  totalRevenueCents: integer("totalRevenueCents").notNull().default(0),
+  productsPurchased: text("productsPurchased").notNull().default(""),
+  communicationPreference: text("communicationPreference").notNull().default("email"),
+  optInStatus: text("optInStatus").notNull().default("unknown"),
+  leadScore: integer("leadScore").notNull().default(0),
+  aiSummary: text("aiSummary").notNull().default(""),
+  recommendedNextAction: text("recommendedNextAction").notNull().default(""),
+  timezone: text("timezone").notNull().default("America/New_York"),
+  industry: text("industry").notNull().default(""),
+  websiteUrl: text("websiteUrl").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const tags = pgTable("tags", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull(),
   name: text("name").notNull(),
-  websiteUrl: text("websiteUrl").notNull().default(""),
-  contactName: text("contactName").notNull().default(""),
-  contactEmail: text("contactEmail").notNull().default(""),
-  phone: text("phone").notNull().default(""),
-  location: text("location").notNull().default(""),
-  timezone: text("timezone").notNull().default("America/New_York"),
-  industry: text("industry").notNull().default(""),
-  accentColor: text("accentColor").notNull().default("oklch(0.6 0.16 250)"),
-  logoUrl: text("logoUrl"),
-  brandVoice: text("brandVoice").notNull().default(""),
-  targetAudience: text("targetAudience").notNull().default(""),
-  commonServices: text("commonServices").notNull().default(""),
-  notes: text("notes").notNull().default(""),
-  lacrmApiKeyEnc: text("lacrmApiKeyEnc"),
-  lacrmStatus: text("lacrmStatus").notNull().default("Disconnected"),
-  lacrmConnectedBy: text("lacrmConnectedBy").notNull().default("—"),
-  lacrmLastCheckedAt: timestamp("lacrmLastCheckedAt"),
-  lacrmAccountName: text("lacrmAccountName"),
-  lacrmUserId: text("lacrmUserId"),
+  slug: text("slug").notNull(),
+  color: text("color").notNull().default("oklch(0.6 0.16 250)"),
+  description: text("description").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const groups = pgTable("groups", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description").notNull().default(""),
+  type: text("type").notNull().default("audience"),
+  isSystem: boolean("isSystem").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const contactTags = pgTable("contact_tags", {
+  contactId: text("contactId").notNull(),
+  tagId: text("tagId").notNull(),
+  addedAt: timestamp("addedAt").notNull().defaultNow(),
+  addedBy: text("addedBy").notNull().default(""),
+})
+
+export const contactGroups = pgTable("contact_groups", {
+  contactId: text("contactId").notNull(),
+  groupId: text("groupId").notNull(),
+  addedAt: timestamp("addedAt").notNull().defaultNow(),
+  addedBy: text("addedBy").notNull().default(""),
+})
+
+export const deals = pgTable("deals", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  contactId: text("contactId").notNull(),
+  title: text("title").notNull(),
+  offerInterest: text("offerInterest").notNull().default(""),
+  stage: text("stage").notNull().default("New Lead"),
+  estimatedValueCents: integer("estimatedValueCents").notNull().default(0),
+  probability: integer("probability").notNull().default(0),
+  nextStep: text("nextStep").notNull().default(""),
+  ownerId: text("ownerId").notNull().default(""),
+  closeDate: timestamp("closeDate"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const campaigns = pgTable("campaigns", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  name: text("name").notNull(),
+  type: text("type").notNull().default("email"),
+  status: text("status").notNull().default("draft"),
+  goal: text("goal").notNull().default(""),
+  audience: text("audience").notNull().default(""),
+  groupId: text("groupId"),
+  sequence: jsonb("sequence").$type<unknown[]>().notNull().default([]),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
 export const activities = pgTable("activities", {
@@ -83,9 +159,34 @@ export const activities = pgTable("activities", {
   userId: text("userId").notNull(),
   type: text("type").notNull(),
   message: text("message").notNull(),
-  clientId: text("clientId").notNull().default(""),
+  contactId: text("contactId").notNull().default(""),
   actorId: text("actorId").notNull().default(""),
   at: timestamp("at").notNull().defaultNow(),
+})
+
+export const aiActions = pgTable("ai_actions", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  actorId: text("actorId").notNull().default(""),
+  command: text("command").notNull(),
+  intent: text("intent").notNull(),
+  status: text("status").notNull().default("pending"),
+  preview: jsonb("preview").$type<AiActionPreview>().notNull().default({} as AiActionPreview),
+  result: jsonb("result").$type<Record<string, unknown>>().notNull().default({}),
+  summary: text("summary").notNull().default(""),
+  reversible: boolean("reversible").notNull().default(false),
+  undoPayload: jsonb("undoPayload").$type<Record<string, unknown> | null>(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  executedAt: timestamp("executedAt"),
+  undoneAt: timestamp("undoneAt"),
+})
+
+export const workspaceSettings = pgTable("workspace_settings", {
+  workspaceId: text("workspaceId").primaryKey(),
+  businessType: text("businessType").notNull().default("iv-therapy"),
+  onboardingComplete: boolean("onboardingComplete").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
 export const teamInvites = pgTable("team_invites", {
@@ -101,3 +202,6 @@ export const teamInvites = pgTable("team_invites", {
   acceptedAt: timestamp("acceptedAt"),
   acceptedByUserId: text("acceptedByUserId"),
 })
+
+/** @deprecated Use contacts — kept for migration compatibility */
+export const clients = contacts

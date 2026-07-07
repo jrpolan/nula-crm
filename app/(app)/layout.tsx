@@ -3,6 +3,7 @@ import { headers } from "next/headers"
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { AiCommandBar } from "@/components/ai-command-bar"
 import { LastRouteTracker } from "@/components/last-route-tracker"
 import { TopBar } from "@/components/top-bar"
 import { SessionUserProvider } from "@/lib/session-context"
@@ -32,7 +33,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <AppSidebar />
         <SidebarInset>
           <TopBar />
-          <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">{children}</main>
+          <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <AiCommandBar />
+            {children}
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </SessionUserProvider>

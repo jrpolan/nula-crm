@@ -6,22 +6,29 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Cursor Cloud specific instructions
 
-- Install dependencies: `npm install`
-- Start dev server: `npm run dev`
-- Lint: `npm run lint`
-- Typecheck: `npm run typecheck`
-- Build (requires `DATABASE_URL` on CI/Vercel): `npm run build`
+- Install: `npm install`
+- Dev: `npm run dev`
+- Migrations: `npm run db:migrate` (requires `DATABASE_URL`)
 
-### Architecture
+## Product model
 
-- Auth: better-auth with invite-only sign-up via `team_invites`
-- Database: Drizzle + PostgreSQL; migrations in `scripts/migrations/`
-- Multi-tenancy: workspace-scoped via `lib/workspace-scope.ts` and `getActingUser()`
-- Mutations: Server Actions in `app/actions/`
-- Reads: `lib/queries.ts` from Server Components
+AI-first small business CRM. Core objects: **Contacts**, **Tags**, **Groups**, **Activities**, **Deals**, **Campaigns**.
 
-### Key routes
+- Tags describe facts; groups describe audiences.
+- Every authenticated page includes the **AI command bar** (`components/ai-command-bar.tsx`).
+- AI bulk actions use interpret → preview → approve → execute → undo (`app/actions/ai.ts`).
 
-- `/dashboard` — workspace overview
-- `/clients` — client list and profiles
-- `/settings` — profile, security, team invites
+## Architecture
+
+- Auth: better-auth, invite-only via `team_invites`
+- DB: Drizzle + PostgreSQL, migrations in `scripts/migrations/`
+- Workspace scoping: `getActingUser()` / `workspaceUserIdMatches()`
+- Types: `lib/crm-types.ts`
+- Defaults (IV therapy): `lib/crm-defaults.ts`, seeded via `seedWorkspaceDefaults()`
+
+## Key routes
+
+- `/dashboard` — stats + AI recommendations
+- `/contacts`, `/contacts/[id]` — contact CRM
+- `/groups`, `/campaigns`, `/ai` — segmentation, campaigns, AI command center
+- `/inbox`, `/automations`, `/reports` — Phase 4/5 stubs

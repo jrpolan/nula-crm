@@ -2,7 +2,17 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getSessionCookie } from "better-auth/cookies"
 
-const PROTECTED_PREFIXES = ["/dashboard", "/clients", "/settings"]
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/contacts",
+  "/groups",
+  "/campaigns",
+  "/inbox",
+  "/automations",
+  "/ai",
+  "/reports",
+  "/settings",
+]
 
 function isProtectedPath(pathname: string) {
   return PROTECTED_PREFIXES.some(
@@ -13,6 +23,12 @@ function isProtectedPath(pathname: string) {
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
   const fullPath = pathname + search
+
+  if (pathname === "/clients" || pathname.startsWith("/clients/")) {
+    const url = request.nextUrl.clone()
+    url.pathname = pathname.replace(/^\/clients/, "/contacts")
+    return NextResponse.redirect(url)
+  }
 
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set("x-nula-path", fullPath)
@@ -27,5 +43,16 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/clients/:path*", "/settings/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/contacts/:path*",
+    "/clients/:path*",
+    "/groups/:path*",
+    "/campaigns/:path*",
+    "/inbox/:path*",
+    "/automations/:path*",
+    "/ai/:path*",
+    "/reports/:path*",
+    "/settings/:path*",
+  ],
 }

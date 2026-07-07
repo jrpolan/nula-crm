@@ -16,7 +16,8 @@ const fontMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Nula CRM",
-  description: "Client relationship management with Less Annoying CRM integration.",
+  description:
+    "AI-first CRM for small businesses. Tell the CRM what you want done — it organizes data, suggests next moves, and helps you execute safely.",
   applicationName: "Nula CRM",
   robots: { index: false, follow: false },
 }
