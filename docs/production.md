@@ -6,7 +6,7 @@
 |----------|-----|
 | Production app | https://nula-crm.vercel.app |
 | Vercel project | https://vercel.com/vs-marketing/nula-crm |
-| GitHub repo | https://github.com/jrpolan/nula-crm |
+| GitHub repo | https://github.com/VandalsSmile/nula-crm |
 
 ## Database (Neon)
 
@@ -36,7 +36,7 @@ npm run db:bootstrap
 
 ## Cursor Cloud environment
 
-1. Open [guided setup](https://cursor.com/onboard?repository=https%3A%2F%2Fgithub.com%2Fjrpolan%2Fnula-crm)
+1. Open [guided setup](https://cursor.com/onboard?repository=https%3A%2F%2Fgithub.com%2FVandalsSmile%2Fnula-crm)
 2. Add secrets matching Vercel production values:
    - `DATABASE_URL`
    - `BETTER_AUTH_SECRET`
