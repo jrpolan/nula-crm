@@ -19,11 +19,32 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  AboutIllustration,
+  HeroIllustration,
+  HowWeHelpIllustration,
+  IllustrationFrame,
+  WhatIsNulaIllustration,
+  WhoItsForIllustration,
+  WhyNulaIllustration,
+} from "@/components/marketing/illustrations"
 import { APP_ROUTES } from "@/lib/routes"
 
-function SectionEyebrow({ children }: { children: React.ReactNode }) {
+function SectionEyebrow({
+  children,
+  tone = "default",
+}: {
+  children: React.ReactNode
+  tone?: "default" | "on-dark"
+}) {
   return (
-    <p className="inline-flex w-fit items-center gap-2 rounded-full bg-nula-violet/10 px-3.5 py-1.5 text-xs font-medium tracking-wide text-nula-violet">
+    <p
+      className={
+        tone === "on-dark"
+          ? "inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3.5 py-1.5 text-xs font-medium tracking-wide text-white backdrop-blur-sm"
+          : "inline-flex w-fit items-center gap-2 rounded-full bg-nula-violet/10 px-3.5 py-1.5 text-xs font-medium tracking-wide text-nula-violet"
+      }
+    >
       {children}
     </p>
   )
@@ -87,8 +108,11 @@ export function MarketingHome() {
             </div>
           </div>
           <div className="relative">
+            <div className="pointer-events-none absolute -right-6 -top-10 z-0 hidden w-full max-w-sm md:block lg:-right-10 lg:-top-14">
+              <HeroIllustration className="opacity-95" />
+            </div>
             <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-nula-violet/10 via-transparent to-nula-signal/10" />
-            <div className="relative rounded-[1.75rem] border border-white/80 bg-white/90 p-6 backdrop-blur-sm marketing-card-soft md:p-7">
+            <div className="relative z-10 rounded-[1.75rem] border border-white/80 bg-white/90 p-6 backdrop-blur-sm marketing-card-soft md:p-7">
               <div className="mb-4 flex items-center gap-2.5 text-sm text-nula-ink/60">
                 <span className="flex size-8 items-center justify-center rounded-full bg-nula-signal/15">
                   <Bot className="size-4 text-[#0d8a75]" />
@@ -110,6 +134,9 @@ export function MarketingHome() {
                 </div>
               </div>
             </div>
+            <IllustrationFrame className="marketing-card-soft mt-6 border-white/90 py-2 md:hidden">
+              <HeroIllustration />
+            </IllustrationFrame>
           </div>
         </div>
       </section>
@@ -117,18 +144,23 @@ export function MarketingHome() {
       {/* What is Nula */}
       <section id="what-is-nula" className="border-t border-border/60 bg-white py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="max-w-2xl">
-            <SectionEyebrow>
-              <Sparkles className="size-3.5" />
-              What is Nula?
-            </SectionEyebrow>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
-              Your CRM, without the complexity
-            </h2>
-            <p className="mt-4 text-lg leading-relaxed text-nula-ink/65">
-              Nula is a friendly, AI-first CRM built for small teams. Tell it what you want — it
-              organizes your people, suggests your next step, and never runs ahead without your OK.
-            </p>
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+            <div className="max-w-2xl">
+              <SectionEyebrow>
+                <Sparkles className="size-3.5" />
+                What is Nula?
+              </SectionEyebrow>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+                Your CRM, without the complexity
+              </h2>
+              <p className="mt-4 text-lg leading-relaxed text-nula-ink/65">
+                Nula is a friendly, AI-first CRM built for small teams. Tell it what you want — it
+                organizes your people, suggests your next step, and never runs ahead without your OK.
+              </p>
+            </div>
+            <IllustrationFrame className="marketing-card-soft">
+              <WhatIsNulaIllustration />
+            </IllustrationFrame>
           </div>
           <div id="how-it-works" className="mt-12 grid gap-5 md:grid-cols-3">
             {[
@@ -172,11 +204,11 @@ export function MarketingHome() {
       <section id="who-its-for" className="border-t border-border/60 py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#5c4de8] via-nula-violet to-[#3d2fb8] p-8 text-white md:p-12">
-            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-              <div className="max-w-xl">
-                <SectionEyebrow>
-                  <HeartHandshake className="size-3.5 text-white" />
-                  <span className="text-white/95">Who it&apos;s for</span>
+            <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+              <div>
+                <SectionEyebrow tone="on-dark">
+                  <HeartHandshake className="size-3.5" />
+                  Who it&apos;s for
                 </SectionEyebrow>
                 <h2 className="mt-4 text-2xl font-semibold md:text-3xl">
                   Built for owners who&apos;d rather serve customers than wrestle software
@@ -186,17 +218,20 @@ export function MarketingHome() {
                   want customers coming back (without a Salesforce-sized headache), you&apos;re in the
                   right place.
                 </p>
+                <div className="mt-8 flex flex-wrap gap-2.5">
+                  {["IV & wellness", "Med spa", "Home services", "Fitness", "Local retail"].map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-white/20 bg-white/15 px-4 py-2 text-sm backdrop-blur-sm"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-2.5">
-              {["IV & wellness", "Med spa", "Home services", "Fitness", "Local retail"].map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-white/20 bg-white/15 px-4 py-2 text-sm backdrop-blur-sm"
-                >
-                  {tag}
-                </span>
-              ))}
+              <IllustrationFrame variant="dark" className="border-white/15">
+                <WhoItsForIllustration />
+              </IllustrationFrame>
             </div>
           </div>
         </div>
@@ -218,6 +253,9 @@ export function MarketingHome() {
               makes the hard parts feel simple.
             </p>
           </div>
+          <IllustrationFrame className="mx-auto mt-10 max-w-2xl marketing-card-soft py-4 md:max-w-3xl">
+            <WhyNulaIllustration />
+          </IllustrationFrame>
           <div className="mt-12 grid gap-6 md:grid-cols-2">
             <div className="rounded-3xl border border-border/70 bg-nula-paper/40 p-6 md:p-8">
               <h3 className="flex items-center gap-2 text-lg font-semibold text-nula-ink/50">
@@ -273,18 +311,23 @@ export function MarketingHome() {
       {/* How we help */}
       <section id="how-we-help" className="border-t border-border/60 marketing-warm-bg py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="max-w-2xl">
-            <SectionEyebrow>
-              <HandHeart className="size-3.5" />
-              How we help
-            </SectionEyebrow>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
-              We handle the busywork. You handle the relationships.
-            </h2>
-            <p className="mt-4 text-lg leading-relaxed text-nula-ink/65">
-              A good CRM does one thing: helps you sell more. Nula takes care of the messy middle so
-              you can show up for your customers.
-            </p>
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+            <div className="max-w-2xl">
+              <SectionEyebrow>
+                <HandHeart className="size-3.5" />
+                How we help
+              </SectionEyebrow>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+                We handle the busywork. You handle the relationships.
+              </h2>
+              <p className="mt-4 text-lg leading-relaxed text-nula-ink/65">
+                A good CRM does one thing: helps you sell more. Nula takes care of the messy middle so
+                you can show up for your customers.
+              </p>
+            </div>
+            <IllustrationFrame className="marketing-card-soft border-white/90">
+              <HowWeHelpIllustration />
+            </IllustrationFrame>
           </div>
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[
@@ -346,6 +389,9 @@ export function MarketingHome() {
       {/* About */}
       <section id="about" className="border-t border-border/60 bg-white py-20 md:py-24">
         <div className="mx-auto max-w-3xl px-4 text-center md:px-6">
+          <IllustrationFrame className="mx-auto mb-10 max-w-md marketing-card-soft">
+            <AboutIllustration />
+          </IllustrationFrame>
           <SectionEyebrow>
             <HeartHandshake className="size-3.5" />
             About us
