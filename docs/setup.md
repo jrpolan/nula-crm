@@ -30,6 +30,20 @@ git push -u origin HEAD:main
 
 ## 3. Configure environment variables
 
+### GitHub auth (Cursor Cloud agents)
+
+Cursor Cloud injects `cursor[bot]` credentials that override your personal login. Each new agent run may require re-auth unless you add a **personal access token** to your Cursor Cloud environment:
+
+1. Create a fine-grained PAT at [github.com/settings/tokens](https://github.com/settings/tokens) for `jrpolan/nula-crm` with **Contents: Read and write**
+2. In Cursor → Cloud → Environment settings, add secret: `GH_TOKEN=<your-pat>`
+3. The install hook runs `scripts/ensure-github-auth.sh` to use that token automatically
+
+Without `GH_TOKEN`, run device login once per fresh VM:
+
+```bash
+gh auth login -h github.com -p https -s repo,read:org,gist
+```
+
 Copy `.env.example` to `.env.local` and fill in:
 
 | Variable | Purpose |

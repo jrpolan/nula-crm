@@ -1,4 +1,4 @@
 {
-  "install": "npm install",
+  "install": "npm install && bash scripts/ensure-github-auth.sh",
   "start": "npm run dev"
 }
