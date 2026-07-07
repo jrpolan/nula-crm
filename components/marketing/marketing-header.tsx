@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ChevronDown, Menu, X } from "lucide-react"
 
 import { Logo } from "@/components/logo"
@@ -86,38 +86,104 @@ const NAV: NavGroup[] = [
 const navLinkClass =
   "rounded-full px-3.5 py-2 text-sm font-medium text-nula-ink/70 transition-colors hover:bg-white hover:text-nula-ink"
 
+const CLOSE_DELAY_MS = 200
+
 function NavDropdown({ group }: { group: NavGroup }) {
   const [open, setOpen] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  const clearCloseTimer = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current)
+      closeTimer.current = null
+    }
+  }
+
+  const scheduleClose = () => {
+    clearCloseTimer()
+    closeTimer.current = setTimeout(() => setOpen(false), CLOSE_DELAY_MS)
+  }
+
+  const openMenu = () => {
+    clearCloseTimer()
+    setOpen(true)
+  }
+
+  useEffect(() => {
+    if (!open) return
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false)
+    }
+
+    document.addEventListener("pointerdown", onPointerDown)
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown)
+      document.removeEventListener("keydown", onKeyDown)
+    }
+  }, [open])
+
+  useEffect(() => () => clearCloseTimer(), [])
 
   return (
     <div
+      ref={rootRef}
       className="relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onMouseEnter={openMenu}
+      onMouseLeave={scheduleClose}
+      onFocusCapture={openMenu}
+      onBlurCapture={(event) => {
+        if (!rootRef.current?.contains(event.relatedTarget as Node)) {
+          scheduleClose()
+        }
+      }}
     >
       <button
         type="button"
         className={cn(navLinkClass, "flex items-center gap-1")}
-        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => {
+          clearCloseTimer()
+          setOpen((v) => !v)
+        }}
       >
         {group.title}
         <ChevronDown className={cn("size-4 transition-transform duration-200", open && "rotate-180")} />
       </button>
       {open ? (
-        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-border/60 bg-white/95 p-2 shadow-xl shadow-nula-violet/10 backdrop-blur-md">
-          {group.items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="block rounded-xl px-3.5 py-3 transition-colors hover:bg-nula-paper"
-              onClick={() => setOpen(false)}
-            >
-              <div className="text-sm font-medium text-nula-ink">{item.label}</div>
-              {item.description ? (
-                <div className="mt-0.5 text-xs leading-relaxed text-nula-ink/55">{item.description}</div>
-              ) : null}
-            </Link>
-          ))}
+        <div
+          className="absolute left-0 top-full z-50 pt-2"
+          onMouseEnter={openMenu}
+          onMouseLeave={scheduleClose}
+        >
+          <div
+            role="menu"
+            className="w-72 rounded-2xl border border-border/60 bg-white/95 p-2 shadow-xl shadow-nula-violet/10 backdrop-blur-md"
+          >
+            {group.items.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                role="menuitem"
+                className="block rounded-xl px-3.5 py-3 transition-colors hover:bg-nula-paper"
+                onClick={() => setOpen(false)}
+              >
+                <div className="text-sm font-medium text-nula-ink">{item.label}</div>
+                {item.description ? (
+                  <div className="mt-0.5 text-xs leading-relaxed text-nula-ink/55">{item.description}</div>
+                ) : null}
+              </Link>
+            ))}
+          </div>
         </div>
       ) : null}
     </div>
