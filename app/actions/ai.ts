@@ -14,7 +14,9 @@ import {
   tags,
 } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
-import { interpretCommand, productKeywordsForIntent, type AiIntent } from "@/lib/ai/interpreter"
+import { interpretCommandAsync } from "@/lib/ai/interpret-with-llm"
+import { productKeywordsForIntent, type AiIntent } from "@/lib/ai/interpreter"
+import { createCampaignDraftForWorkspace } from "@/lib/campaigns/drafts"
 import { randomId } from "@/lib/library-helpers"
 import {
   getContacts,
@@ -73,7 +75,7 @@ async function addContactsToGroup(
 
 export async function interpretAiCommand(command: string) {
   const { user, workspaceId } = await getActingUser()
-  const interpreted = interpretCommand(command)
+  const interpreted = await interpretCommandAsync(command)
 
   const [row] = await db
     .insert(aiActions)
@@ -86,11 +88,17 @@ export async function interpretAiCommand(command: string) {
       status: interpreted.requiresApproval ? "pending" : "approved",
       preview: interpreted.preview,
       reversible: interpreted.requiresApproval,
+      result: { params: interpreted.params },
     })
     .returning()
 
   if (!interpreted.requiresApproval) {
-    const result = await executeAiActionInternal(row.id, interpreted.intent, interpreted.params, interpreted.preview)
+    const result = await executeAiActionInternal(
+      row.id,
+      interpreted.intent,
+      interpreted.params,
+      interpreted.preview,
+    )
     return { actionId: row.id, preview: interpreted.preview, result, requiresApproval: false }
   }
 
@@ -104,7 +112,9 @@ export async function approveAiAction(actionId: string) {
   if (action.status !== "pending") throw new Error("Action is not pending approval")
 
   const preview = action.preview as AiActionPreview
-  const result = await executeAiActionInternal(actionId, action.intent as AiIntent, {}, preview)
+  const stored = action.result as { params?: Record<string, string> } | null
+  const params = stored?.params ?? {}
+  const result = await executeAiActionInternal(actionId, action.intent as AiIntent, params, preview)
   return result
 }
 
@@ -148,7 +158,14 @@ async function executeAiActionInternal(
   if (intent === "create_reactivation_campaign") {
     const inactive = await getInactiveCustomers(90)
     impactCount = inactive.length
-    summary = `Draft reactivation campaign ready for ${impactCount} inactive customers. Open Campaigns to review and approve.`
+    const campaign = await createCampaignDraftForWorkspace(workspaceId, {
+      name: "Reactivation — 90 day inactive",
+      type: "reactivation",
+      goal: "Bring customers back with a relevant offer",
+      audience: `${impactCount} customers inactive 90+ days`,
+      groupName: "Reactivation List",
+    })
+    summary = `Created reactivation campaign draft "${campaign.name}" for ${impactCount} inactive customers. Review and approve in Campaigns.`
   }
 
   if (intent === "find_duplicates") {

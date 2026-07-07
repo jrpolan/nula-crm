@@ -7,6 +7,7 @@ import { db } from "@/lib/db"
 import { campaigns, contactGroups, groups, tags, workspaceSettings } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { DEFAULT_GROUPS, DEFAULT_TAGS, slugifyTag, type BusinessTypeId } from "@/lib/crm-defaults"
+import { seedDefaultAutomations } from "@/lib/automations/engine"
 import { randomId } from "@/lib/library-helpers"
 
 export async function seedWorkspaceDefaults(businessType: BusinessTypeId = "iv-therapy") {
@@ -72,6 +73,8 @@ export async function seedWorkspaceDefaults(businessType: BusinessTypeId = "iv-t
       target: workspaceSettings.workspaceId,
       set: { businessType, onboardingComplete: true, updatedAt: new Date() },
     })
+
+  await seedDefaultAutomations(workspaceId)
 
   revalidatePath("/groups")
   revalidatePath("/dashboard")

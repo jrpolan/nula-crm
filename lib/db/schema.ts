@@ -189,6 +189,18 @@ export const workspaceSettings = pgTable("workspace_settings", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
+export const automations = pgTable("automations", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  name: text("name").notNull(),
+  trigger: text("trigger").notNull(),
+  action: text("action").notNull(),
+  config: jsonb("config").$type<Record<string, unknown>>().notNull().default({}),
+  enabled: boolean("enabled").notNull().default(true),
+  lastRunAt: timestamp("lastRunAt"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 export const teamInvites = pgTable("team_invites", {
   id: text("id").primaryKey(),
   workspaceId: text("workspaceId").notNull(),

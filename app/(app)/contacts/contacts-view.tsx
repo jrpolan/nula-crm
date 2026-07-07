@@ -2,11 +2,12 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Plus, Mail, Phone, Pencil, Trash2, MoreHorizontal } from "lucide-react"
+import { Plus, Mail, Phone, Pencil, MoreHorizontal, Upload } from "lucide-react"
 
 import { PageHeader } from "@/components/page-header"
 import { LifecycleBadge, LeadScoreBadge } from "@/components/lifecycle-badge"
 import { AddContactDialog } from "@/components/add-contact-dialog"
+import { CsvImportDialog } from "@/components/csv-import-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,6 +21,7 @@ import { initials, type Contact } from "@/lib/crm-types"
 
 export function ContactsView({ contacts }: { contacts: Contact[] }) {
   const [addOpen, setAddOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   return (
     <div className="flex flex-col gap-6">
@@ -27,10 +29,16 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
         title="Contacts"
         description="Your people — leads, customers, and everyone in between."
         actions={
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus data-icon="inline-start" />
-            Add contact
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload data-icon="inline-start" />
+              Import CSV
+            </Button>
+            <Button onClick={() => setAddOpen(true)}>
+              <Plus data-icon="inline-start" />
+              Add contact
+            </Button>
+          </div>
         }
       />
 
@@ -101,6 +109,7 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
       )}
 
       <AddContactDialog open={addOpen} onOpenChange={setAddOpen} />
+      <CsvImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   )
 }

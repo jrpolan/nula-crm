@@ -9,6 +9,9 @@ import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { randomId } from "@/lib/library-helpers"
 import { mapContact } from "@/lib/mappers"
 import type { Contact, LifecycleStage } from "@/lib/crm-types"
+import { calculateLeadScore, recommendedNextActionForLead } from "@/lib/leads/scoring"
+import { generateLeadSummary } from "@/lib/leads/summary"
+import { processLeadAutomations } from "@/lib/automations/engine"
 
 export type ContactInput = {
   firstName: string
@@ -135,4 +138,125 @@ export async function addContactToGroup(contactId: string, groupId: string) {
   })
   revalidatePath(`/contacts/${contactId}`)
   revalidatePath("/groups")
+}
+
+function parseCsvLine(line: string): string[] {
+  const values: string[] = []
+  let current = ""
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"') {
+      inQuotes = !inQuotes
+      continue
+    }
+    if (char === "," && !inQuotes) {
+      values.push(current.trim())
+      current = ""
+      continue
+    }
+    current += char
+  }
+  values.push(current.trim())
+  return values
+}
+
+function headerIndex(headers: string[], ...names: string[]) {
+  const normalized = headers.map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ""))
+  for (const name of names) {
+    const key = name.toLowerCase().replace(/[^a-z0-9]/g, "")
+    const idx = normalized.indexOf(key)
+    if (idx >= 0) return idx
+  }
+  return -1
+}
+
+export type CsvImportResult = {
+  created: number
+  skipped: number
+  errors: string[]
+}
+
+export async function importContactsFromCsv(csvText: string): Promise<CsvImportResult> {
+  const { user, workspaceId } = await getActingUser()
+  const lines = csvText.trim().split(/\r?\n/).filter(Boolean)
+  if (lines.length < 2) throw new Error("CSV must include a header row and at least one contact")
+
+  const headers = parseCsvLine(lines[0])
+  const firstIdx = headerIndex(headers, "firstname", "first", "first name")
+  const lastIdx = headerIndex(headers, "lastname", "last", "last name")
+  const emailIdx = headerIndex(headers, "email", "email address")
+  const phoneIdx = headerIndex(headers, "phone", "mobile", "cell")
+  const sourceIdx = headerIndex(headers, "source", "lead source")
+  const notesIdx = headerIndex(headers, "notes", "note")
+
+  let created = 0
+  let skipped = 0
+  const errors: string[] = []
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i])
+    const firstName = (firstIdx >= 0 ? cols[firstIdx] : cols[0])?.trim()
+    if (!firstName) {
+      skipped++
+      continue
+    }
+
+    const lastName = lastIdx >= 0 ? cols[lastIdx]?.trim() ?? "" : ""
+    const email = emailIdx >= 0 ? cols[emailIdx]?.trim() ?? "" : ""
+    const phone = phoneIdx >= 0 ? cols[phoneIdx]?.trim() ?? "" : ""
+    const source = sourceIdx >= 0 ? cols[sourceIdx]?.trim() || "csv-import" : "csv-import"
+    const notes = notesIdx >= 0 ? cols[notesIdx]?.trim() ?? "" : ""
+
+    try {
+      const leadScore = calculateLeadScore({ source, email, phone, notes })
+      const aiSummary = await generateLeadSummary({
+        firstName,
+        lastName,
+        source,
+        notes,
+        leadScore,
+      })
+      const recommendedNextAction = recommendedNextActionForLead(leadScore, source)
+
+      const [row] = await db
+        .insert(contacts)
+        .values({
+          id: randomId("ct"),
+          userId: workspaceId,
+          firstName,
+          lastName,
+          name: [firstName, lastName].filter(Boolean).join(" "),
+          email,
+          phone,
+          source,
+          lifecycleStage: "New Lead",
+          notes,
+          leadScore,
+          aiSummary,
+          recommendedNextAction,
+          lastActivityAt: new Date(),
+        })
+        .returning()
+
+      await db.insert(activities).values({
+        id: randomId("a"),
+        userId: workspaceId,
+        type: "created",
+        message: `imported contact ${firstName} from CSV`,
+        contactId: row.id,
+        actorId: user.id,
+      })
+
+      await processLeadAutomations(workspaceId, row.id, { isNew: true, leadScore, source })
+      created++
+    } catch (err) {
+      errors.push(`Row ${i + 1}: ${err instanceof Error ? err.message : "import failed"}`)
+      skipped++
+    }
+  }
+
+  revalidatePath("/contacts")
+  revalidatePath("/dashboard")
+  return { created, skipped, errors }
 }

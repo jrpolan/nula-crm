@@ -29,6 +29,15 @@ AI-first small business CRM. Core objects: **Contacts**, **Tags**, **Groups**, *
 ## Key routes
 
 - `/dashboard` — stats + AI recommendations
-- `/contacts`, `/contacts/[id]` — contact CRM
+- `/contacts`, `/contacts/[id]` — contact CRM + CSV import
 - `/groups`, `/campaigns`, `/ai` — segmentation, campaigns, AI command center
-- `/inbox`, `/automations`, `/reports` — Phase 4/5 stubs
+- `/inbox`, `/reports` — Phase 4 stubs
+- `/automations` — automation rules + inactive detection
+- `POST /api/webhooks/leads` — lead intake (requires `LEAD_WEBHOOK_SECRET`)
+- `GET /api/cron/automations` — daily inactive customer check (requires `CRON_SECRET`)
+
+## Integrations
+
+- **OpenAI** (`OPENAI_API_KEY`) — AI command interpreter + lead summaries; regex fallback without key
+- **Resend** (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`) — campaign email sends
+- **Lead webhook** — duplicate match, scoring, tags, groups, automations on intake

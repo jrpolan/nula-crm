@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS automations (
+  id TEXT PRIMARY KEY,
+  "userId" TEXT NOT NULL,
+  name TEXT NOT NULL,
+  trigger TEXT NOT NULL,
+  action TEXT NOT NULL,
+  config JSONB NOT NULL DEFAULT '{}',
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  "lastRunAt" TIMESTAMP,
+  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+);
