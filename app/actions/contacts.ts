@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
-import { activities, contactGroups, contactTags, contacts, groups, tags } from "@/lib/db/schema"
+import { activities, contactGroups, contactTags, contacts, deals } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { randomId } from "@/lib/library-helpers"
 import { mapContact } from "@/lib/mappers"
@@ -12,6 +12,7 @@ import type { Contact, LifecycleStage } from "@/lib/crm-types"
 import { calculateLeadScore, recommendedNextActionForLead } from "@/lib/leads/scoring"
 import { generateLeadSummary } from "@/lib/leads/summary"
 import { processLeadAutomations } from "@/lib/automations/engine"
+import { APP_ROUTES } from "@/lib/routes"
 
 export type ContactInput = {
   firstName: string
@@ -68,13 +69,13 @@ export async function createContact(input: ContactInput): Promise<Contact> {
     actorId: user.id,
   })
 
-  revalidatePath("/contacts")
-  revalidatePath("/dashboard")
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.dashboard)
   return mapContact(row)
 }
 
 export async function updateContact(id: string, input: Partial<ContactInput>): Promise<Contact> {
-  const { scopeIds } = await getActingUser()
+  const { user, workspaceId, scopeIds } = await getActingUser()
 
   const patch: Record<string, string | number | Date | null> = {}
   for (const [key, value] of Object.entries(input)) {
@@ -94,8 +95,17 @@ export async function updateContact(id: string, input: Partial<ContactInput>): P
     .returning()
   if (!row) throw new Error("Contact not found")
 
-  revalidatePath("/contacts")
-  revalidatePath(`/contacts/${id}`)
+  await db.insert(activities).values({
+    id: randomId("a"),
+    userId: workspaceId,
+    type: "edited",
+    message: `updated contact ${row.firstName} ${row.lastName}`.trim(),
+    contactId: id,
+    actorId: user.id,
+  })
+
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(`${APP_ROUTES.contacts}/${id}`)
   return mapContact(row)
 }
 
@@ -104,40 +114,13 @@ export async function deleteContact(id: string): Promise<void> {
 
   await db.delete(contactTags).where(eq(contactTags.contactId, id))
   await db.delete(contactGroups).where(eq(contactGroups.contactId, id))
+  await db.delete(deals).where(and(eq(deals.contactId, id), workspaceUserIdMatches(deals.userId, scopeIds)))
   await db.delete(activities).where(and(eq(activities.contactId, id), workspaceUserIdMatches(activities.userId, scopeIds)))
   await db.delete(contacts).where(and(eq(contacts.id, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
 
-  revalidatePath("/contacts")
-  revalidatePath("/dashboard")
-}
-
-export async function addTagToContact(contactId: string, tagId: string) {
-  const { user, workspaceId } = await getActingUser()
-  await db.insert(contactTags).values({ contactId, tagId, addedBy: user.id }).onConflictDoNothing()
-  await db.insert(activities).values({
-    id: randomId("a"),
-    userId: workspaceId,
-    type: "tag_added",
-    message: "tag added to contact",
-    contactId,
-    actorId: user.id,
-  })
-  revalidatePath(`/contacts/${contactId}`)
-}
-
-export async function addContactToGroup(contactId: string, groupId: string) {
-  const { user, workspaceId } = await getActingUser()
-  await db.insert(contactGroups).values({ contactId, groupId, addedBy: user.id }).onConflictDoNothing()
-  await db.insert(activities).values({
-    id: randomId("a"),
-    userId: workspaceId,
-    type: "group_changed",
-    message: "contact added to group",
-    contactId,
-    actorId: user.id,
-  })
-  revalidatePath(`/contacts/${contactId}`)
-  revalidatePath("/groups")
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.dashboard)
+  revalidatePath(APP_ROUTES.groups)
 }
 
 function parseCsvLine(line: string): string[] {
@@ -256,7 +239,7 @@ export async function importContactsFromCsv(csvText: string): Promise<CsvImportR
     }
   }
 
-  revalidatePath("/contacts")
-  revalidatePath("/dashboard")
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.dashboard)
   return { created, skipped, errors }
 }

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { campaigns, contactGroups, groups, tags, workspaceSettings } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { APP_ROUTES } from "@/lib/routes"
 import { DEFAULT_GROUPS, DEFAULT_TAGS, slugifyTag, type BusinessTypeId } from "@/lib/crm-defaults"
 import { seedDefaultAutomations } from "@/lib/automations/engine"
 import { randomId } from "@/lib/library-helpers"
@@ -76,26 +77,32 @@ export async function seedWorkspaceDefaults(businessType: BusinessTypeId = "iv-t
 
   await seedDefaultAutomations(workspaceId)
 
-  revalidatePath("/groups")
-  revalidatePath("/dashboard")
+  revalidatePath(APP_ROUTES.groups)
+  revalidatePath(APP_ROUTES.tags)
+  revalidatePath(APP_ROUTES.dashboard)
   return { ok: true, seeded: true }
 }
 
-export async function createGroup(name: string, description = "") {
+export async function updateWorkspaceSettings(input: { businessType?: BusinessTypeId }) {
   const { workspaceId } = await getActingUser()
-  const slug = slugifyTag(name)
+
   const [row] = await db
-    .insert(groups)
+    .insert(workspaceSettings)
     .values({
-      id: randomId("g"),
-      userId: workspaceId,
-      name: name.trim(),
-      slug,
-      description,
-      type: "audience",
+      workspaceId,
+      businessType: input.businessType ?? "iv-therapy",
+      onboardingComplete: true,
+    })
+    .onConflictDoUpdate({
+      target: workspaceSettings.workspaceId,
+      set: {
+        businessType: input.businessType ?? "iv-therapy",
+        updatedAt: new Date(),
+      },
     })
     .returning()
-  revalidatePath("/groups")
+
+  revalidatePath(APP_ROUTES.settings)
   return row
 }
 
@@ -124,7 +131,7 @@ export async function createCampaignDraft(input: {
       ],
     })
     .returning()
-  revalidatePath("/campaigns")
+  revalidatePath(APP_ROUTES.campaigns)
   return row
 }
 

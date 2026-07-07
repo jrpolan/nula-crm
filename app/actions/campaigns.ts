@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { activities, campaigns, contactGroups, contacts } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { APP_ROUTES } from "@/lib/routes"
 import { randomId } from "@/lib/library-helpers"
 import { CAMPAIGN_TEMPLATES } from "@/lib/crm-defaults"
 import { createCampaignDraftForWorkspace } from "@/lib/campaigns/drafts"
@@ -23,8 +24,51 @@ export async function createCampaignFromTemplate(templateId: string) {
     audience: template.description,
   })
 
-  revalidatePath("/campaigns")
+  revalidatePath(APP_ROUTES.campaigns)
   return { id: row.id, name: row.name }
+}
+
+export type CampaignUpdateInput = {
+  name?: string
+  goal?: string
+  audience?: string
+  groupId?: string | null
+  status?: string
+}
+
+export async function updateCampaign(campaignId: string, input: CampaignUpdateInput) {
+  const { scopeIds } = await getActingUser()
+  const patch: Record<string, string | null | Date> = { updatedAt: new Date() }
+  if (input.name !== undefined) patch.name = input.name.trim()
+  if (input.goal !== undefined) patch.goal = input.goal.trim()
+  if (input.audience !== undefined) patch.audience = input.audience.trim()
+  if (input.groupId !== undefined) patch.groupId = input.groupId
+  if (input.status !== undefined) patch.status = input.status
+
+  const [row] = await db
+    .update(campaigns)
+    .set(patch)
+    .where(and(eq(campaigns.id, campaignId), workspaceUserIdMatches(campaigns.userId, scopeIds)))
+    .returning()
+  if (!row) throw new Error("Campaign not found")
+
+  revalidatePath(APP_ROUTES.campaigns)
+  return row
+}
+
+export async function deleteCampaign(campaignId: string) {
+  const { scopeIds } = await getActingUser()
+  const [row] = await db
+    .select()
+    .from(campaigns)
+    .where(and(eq(campaigns.id, campaignId), workspaceUserIdMatches(campaigns.userId, scopeIds)))
+    .limit(1)
+  if (!row) throw new Error("Campaign not found")
+  if (row.status === "active") throw new Error("Cannot delete an active campaign")
+
+  await db.delete(campaigns).where(eq(campaigns.id, campaignId))
+  revalidatePath(APP_ROUTES.campaigns)
+  return { ok: true }
 }
 
 export async function approveCampaign(campaignId: string) {
@@ -35,7 +79,7 @@ export async function approveCampaign(campaignId: string) {
     .where(and(eq(campaigns.id, campaignId), workspaceUserIdMatches(campaigns.userId, scopeIds)))
     .returning()
   if (!row) throw new Error("Campaign not found")
-  revalidatePath("/campaigns")
+  revalidatePath(APP_ROUTES.campaigns)
   return { ok: true, status: row.status }
 }
 
@@ -84,7 +128,7 @@ export async function launchCampaign(campaignId: string) {
     })
   }
 
-  revalidatePath("/campaigns")
+  revalidatePath(APP_ROUTES.campaigns)
   return {
     ok: true,
     sent: sendResult.sent,
