@@ -7,7 +7,7 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { teamInvites, user as userTable } from "@/lib/db/schema"
-import { getActingUser } from "@/lib/auth-helpers"
+import { getActingUser, normalizeRole, requireRole, type WorkspaceRole } from "@/lib/auth-helpers"
 import { APP_ROUTES } from "@/lib/routes"
 
 const INVITE_TTL_DAYS = 14
@@ -29,6 +29,7 @@ export type TeamMember = {
   name: string
   email: string
   image: string | null
+  role: WorkspaceRole
   isOwner: boolean
   isYou: boolean
 }
@@ -69,8 +70,12 @@ function mapInvite(
  * URL. Re-invoking for an email with a live pending invite returns that same
  * invite (revoking the old token would break links already sent).
  */
-export async function createTeamInvite(emailInput: string): Promise<TeamInvite> {
-  const { user, workspaceId } = await getActingUser()
+export async function createTeamInvite(
+  emailInput: string,
+  roleInput: WorkspaceRole = "Staff",
+): Promise<TeamInvite> {
+  const { user, workspaceId } = await requireRole("Admin")
+  const role = normalizeRole(roleInput)
 
   const email = emailInput.trim().toLowerCase()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -121,7 +126,7 @@ export async function createTeamInvite(emailInput: string): Promise<TeamInvite> 
       id: token,
       workspaceId,
       email,
-      role: "admin",
+      role,
       status: "Pending",
       invitedByUserId: user.id,
       invitedByName: user.name,
@@ -154,6 +159,7 @@ export async function listTeamMembers(): Promise<TeamMember[]> {
       name: userTable.name,
       email: userTable.email,
       image: userTable.image,
+      role: userTable.role,
     })
     .from(userTable)
     .where(eq(userTable.workspaceId, workspaceId))
@@ -163,6 +169,7 @@ export async function listTeamMembers(): Promise<TeamMember[]> {
       name: r.name,
       email: r.email,
       image: r.image,
+      role: r.id === workspaceId ? ("Admin" as WorkspaceRole) : normalizeRole(r.role),
       isOwner: r.id === workspaceId,
       isYou: r.id === user.id,
     }))
@@ -171,7 +178,7 @@ export async function listTeamMembers(): Promise<TeamMember[]> {
 
 /** Revoke a pending invite so its link can no longer be used. */
 export async function revokeTeamInvite(token: string): Promise<void> {
-  const { workspaceId } = await getActingUser()
+  const { workspaceId } = await requireRole("Admin")
   await db
     .update(teamInvites)
     .set({ status: "Revoked" })
@@ -223,13 +230,16 @@ export async function acceptTeamInvite(token: string): Promise<{ ok: boolean }> 
   // Bootstrap owner invite uses workspaceId "__bootstrap__". The first accepted
   // invite becomes the workspace owner and inherits their user id as workspaceId.
   let workspaceId = invite.workspaceId
+  let role = normalizeRole(invite.role)
   if (workspaceId === "__bootstrap__") {
     workspaceId = acting.id
+    role = "Admin" // the first accepted invite becomes the workspace owner
     await db.update(teamInvites).set({ workspaceId: acting.id }).where(eq(teamInvites.id, token))
   }
 
-  // Bind the new user to the inviting workspace (shared data) and close the invite.
-  await db.update(userTable).set({ workspaceId }).where(eq(userTable.id, acting.id))
+  // Bind the new user to the inviting workspace (shared data) with their role
+  // and close the invite.
+  await db.update(userTable).set({ workspaceId, role }).where(eq(userTable.id, acting.id))
   await db
     .update(teamInvites)
     .set({ status: "Accepted", acceptedAt: new Date(), acceptedByUserId: acting.id })

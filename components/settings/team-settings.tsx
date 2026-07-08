@@ -30,6 +30,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useSessionUser } from "@/lib/session-context"
 import { initials } from "@/lib/mock-data"
 import {
   createTeamInvite,
@@ -42,14 +50,20 @@ import {
 
 type TeamData = { members: TeamMember[]; invites: TeamInvite[] }
 
+const ROLE_OPTIONS = ["Admin", "Manager", "Staff", "Viewer"] as const
+type RoleOption = (typeof ROLE_OPTIONS)[number]
+
 async function fetchTeam(): Promise<TeamData> {
   const [members, invites] = await Promise.all([listTeamMembers(), listTeamInvites()])
   return { members, invites }
 }
 
 export function TeamSettings() {
+  const me = useSessionUser()
+  const isAdmin = me.role === "Admin"
   const { data, isLoading, mutate } = useSWR<TeamData>("team", fetchTeam)
   const [email, setEmail] = useState("")
+  const [role, setRole] = useState<RoleOption>("Staff")
   const [inviting, setInviting] = useState(false)
   const [lastInvite, setLastInvite] = useState<TeamInvite | null>(null)
   const [copied, setCopied] = useState(false)
@@ -64,7 +78,7 @@ export function TeamSettings() {
     if (!trimmed) return
     setInviting(true)
     try {
-      const invite = await createTeamInvite(trimmed)
+      const invite = await createTeamInvite(trimmed, role)
       setLastInvite(invite)
       setCopied(false)
       setEmail("")
@@ -106,13 +120,14 @@ export function TeamSettings() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Invite by email */}
+      {/* Invite by email (admins only) */}
+      {isAdmin && (
       <Card>
         <CardHeader>
           <CardTitle>Invite a teammate</CardTitle>
           <CardDescription>
-            Enter their email to generate a private invite link. Send it to them and they&apos;ll join
-            this shared workspace as an admin.
+            Enter their email and choose a role to generate a private invite link. Send it to them and
+            they&apos;ll join this shared workspace.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -129,6 +144,21 @@ export function TeamSettings() {
                   autoComplete="off"
                 />
               </InputGroup>
+            </Field>
+            <Field className="sm:w-40">
+              <FieldLabel htmlFor="invite-role">Role</FieldLabel>
+              <Select value={role} onValueChange={(v) => setRole(v as RoleOption)}>
+                <SelectTrigger id="invite-role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             <Button type="submit" disabled={inviting || !email.trim()}>
               <PlusIcon data-icon="inline-start" />
@@ -151,13 +181,14 @@ export function TeamSettings() {
                 </InputGroupAddon>
               </InputGroup>
               <FieldDescription>
-                Anyone with this link can join as an admin, so only share it with {lastInvite.email}.
-                It expires in 14 days.
+                Anyone with this link can join as {lastInvite.role}, so only share it with{" "}
+                {lastInvite.email}. It expires in 14 days.
               </FieldDescription>
             </Field>
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Members + pending invites */}
       <Card>
@@ -204,7 +235,7 @@ export function TeamSettings() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">Admin</Badge>
+                        <Badge variant="secondary">{m.role}</Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={m.isOwner ? "default" : "secondary"}>
@@ -230,12 +261,13 @@ export function TeamSettings() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">Admin</Badge>
+                        <Badge variant="secondary">{inv.role}</Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">Pending</Badge>
                       </TableCell>
                       <TableCell>
+                        {isAdmin && (
                         <DropdownMenu>
                           <DropdownMenuTrigger
                             render={
@@ -255,6 +287,7 @@ export function TeamSettings() {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -8,6 +8,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("emailVerified").notNull().default(false),
   image: text("image"),
   workspaceId: text("workspaceId"),
+  role: text("role").notNull().default("Admin"),
   notificationsReadAt: timestamp("notificationsReadAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
@@ -176,6 +177,18 @@ export const activities = pgTable("activities", {
   contactId: text("contactId").notNull().default(""),
   actorId: text("actorId").notNull().default(""),
   at: timestamp("at").notNull().defaultNow(),
+})
+
+export const messages = pgTable("messages", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  contactId: text("contactId").notNull(),
+  direction: text("direction").notNull().default("inbound"),
+  channel: text("channel").notNull().default("email"),
+  subject: text("subject").notNull().default(""),
+  body: text("body").notNull().default(""),
+  status: text("status").notNull().default("received"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
 export const aiActions = pgTable("ai_actions", {

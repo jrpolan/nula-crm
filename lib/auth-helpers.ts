@@ -52,6 +52,26 @@ export async function getWorkspaceScope() {
   return { workspaceId, scopeIds }
 }
 
+export type WorkspaceRole = "Admin" | "Manager" | "Staff" | "Viewer"
+const VALID_ROLES: WorkspaceRole[] = ["Admin", "Manager", "Staff", "Viewer"]
+
+export function normalizeRole(role: string | null | undefined): WorkspaceRole {
+  if (!role) return "Staff"
+  const match = VALID_ROLES.find((r) => r.toLowerCase() === role.trim().toLowerCase())
+  return match ?? "Staff"
+}
+
+/**
+ * Resolve a user's role. The workspace owner (whose id equals the workspace id)
+ * is always Admin; everyone else uses their stored role.
+ */
+export async function getUserRole(userId: string, workspaceId?: string): Promise<WorkspaceRole> {
+  const ws = workspaceId ?? (await resolveActingWorkspaceId(userId))
+  if (userId === ws) return "Admin"
+  const [row] = await db.select({ role: userTable.role }).from(userTable).where(eq(userTable.id, userId)).limit(1)
+  return normalizeRole(row?.role)
+}
+
 /**
  * The signed-in user plus their workspace id. Use `user.id`/`user.name` for
  * attribution (who did something) and `workspaceId` for data scoping.
@@ -61,5 +81,15 @@ export async function getActingUser() {
   if (!user) throw new Error("Unauthorized")
   const workspaceId = await resolveActingWorkspaceId(user.id)
   const scopeIds = await getWorkspaceScopeIds(workspaceId)
-  return { user, workspaceId, scopeIds }
+  const role = await getUserRole(user.id, workspaceId)
+  return { user, workspaceId, scopeIds, role }
+}
+
+/** Throws unless the current user has one of the allowed roles. */
+export async function requireRole(...roles: WorkspaceRole[]) {
+  const acting = await getActingUser()
+  if (!roles.includes(acting.role)) {
+    throw new Error("You don't have permission to do this.")
+  }
+  return acting
 }
