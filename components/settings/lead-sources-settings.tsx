@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  createCallSource,
   createEmailSource,
   createWebFormSource,
   getLeadEvents,
@@ -98,6 +99,7 @@ export function LeadSourcesSettings() {
   const events = data?.events ?? []
   const webForms = sources.filter((s) => s.channel === "web_form" && s.publicKey)
   const emailSources = sources.filter((s) => s.channel === "email" && s.publicKey)
+  const callSources = sources.filter((s) => s.channel === "call" && s.publicKey)
 
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -107,6 +109,10 @@ export function LeadSourcesSettings() {
   const [showEmailForm, setShowEmailForm] = useState(false)
   const [savingEmail, setSavingEmail] = useState(false)
   const [emailName, setEmailName] = useState("")
+
+  const [showCallForm, setShowCallForm] = useState(false)
+  const [savingCall, setSavingCall] = useState(false)
+  const [callName, setCallName] = useState("")
 
   async function handleCreateEmail() {
     if (!emailName.trim()) {
@@ -124,6 +130,25 @@ export function LeadSourcesSettings() {
       toast.error(err instanceof Error ? err.message : "Could not create email source")
     } finally {
       setSavingEmail(false)
+    }
+  }
+
+  async function handleCreateCall() {
+    if (!callName.trim()) {
+      toast.error("Give the call source a name")
+      return
+    }
+    setSavingCall(true)
+    try {
+      await createCallSource({ name: callName })
+      toast.success("Call tracking source created")
+      setCallName("")
+      setShowCallForm(false)
+      mutate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not create call source")
+    } finally {
+      setSavingCall(false)
     }
   }
 
@@ -354,6 +379,74 @@ export function LeadSourcesSettings() {
                     Mailgun) at <code className="font-mono">/api/inbound/email</code>, or forward mail
                     to this address.
                   </p>
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>Phone calls</CardTitle>
+            <CardDescription>
+              Point a call‑tracking provider (Twilio, CallRail) at this webhook. Every inbound or
+              missed call becomes a lead — with the recording and transcription saved as an activity.
+            </CardDescription>
+          </div>
+          {isAdmin ? (
+            <Button size="sm" onClick={() => setShowCallForm((s) => !s)} disabled={savingCall}>
+              <Plus className="size-4" />
+              New call source
+            </Button>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {showCallForm && isAdmin ? (
+            <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="call-name">Source name</Label>
+                <Input
+                  id="call-name"
+                  value={callName}
+                  onChange={(e) => setCallName(e.target.value)}
+                  placeholder="Main tracking number"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setShowCallForm(false)} disabled={savingCall}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateCall} disabled={savingCall}>
+                  {savingCall ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Create source
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {callSources.length === 0 ? (
+            <p className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
+              No call sources yet. Create one to get a call‑tracking webhook URL.
+            </p>
+          ) : (
+            callSources.map((s) => (
+              <div key={s.id} className="flex flex-col gap-3 rounded-lg border p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{s.name}</span>
+                  <Badge variant={s.enabled ? "default" : "secondary"}>
+                    {s.enabled ? "Active" : "Disabled"}
+                  </Badge>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Call webhook URL</Label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 truncate rounded bg-muted px-2 py-1.5 font-mono text-xs">
+                      {s.callWebhookUrl}
+                    </code>
+                    <CopyButton text={s.callWebhookUrl} label="Copy" />
+                  </div>
                 </div>
               </div>
             ))
