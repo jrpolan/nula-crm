@@ -6,11 +6,13 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { AiCommandBar } from "@/components/ai-command-bar"
 import { LastRouteTracker } from "@/components/last-route-tracker"
 import { TopBar } from "@/components/top-bar"
+import { TrialBanner } from "@/components/trial-banner"
 import { SessionUserProvider } from "@/lib/session-context"
-import { DEFAULT_APP_PATH, safeRedirectPath } from "@/lib/routes"
+import { safeRedirectPath } from "@/lib/routes"
 import { appPrivateMetadata } from "@/lib/seo"
 import { auth } from "@/lib/auth"
 import { getUserProfile } from "@/lib/auth-helpers"
+import { getTrialStatus } from "@/app/actions/workspace"
 
 export const metadata = appPrivateMetadata
 
@@ -23,6 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const profile = await getUserProfile(session.user.id)
+  const trial = await getTrialStatus()
   const user = {
     id: session.user.id,
     name: session.user.name,
@@ -39,6 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <LastRouteTracker />
         <AppSidebar />
         <SidebarInset>
+          <TrialBanner status={trial} />
           <TopBar />
           <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
             <AiCommandBar />

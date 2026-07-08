@@ -8,9 +8,10 @@ import { TeamSettings } from "@/components/settings/team-settings"
 import { WorkspaceSettings } from "@/components/settings/workspace-settings"
 import { LeadSourcesSettings } from "@/components/settings/lead-sources-settings"
 import { RoutingRulesSettings } from "@/components/settings/routing-rules-settings"
+import { PlanSettings } from "@/components/settings/plan-settings"
 import { useUrlTab } from "@/hooks/use-url-tab"
 
-const SETTINGS_TABS = ["profile", "security", "team", "workspace", "leads"] as const
+const SETTINGS_TABS = ["profile", "security", "team", "workspace", "leads", "plan"] as const
 type SettingsTab = (typeof SETTINGS_TABS)[number]
 
 export function SettingsView() {
@@ -27,6 +28,7 @@ export function SettingsView() {
           <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="workspace">Company</TabsTrigger>
           <TabsTrigger value="leads">Lead sources</TabsTrigger>
+          <TabsTrigger value="plan">Plan</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">
@@ -48,6 +50,10 @@ export function SettingsView() {
         <TabsContent value="leads" className="mt-6 flex flex-col gap-6">
           <RoutingRulesSettings />
           <LeadSourcesSettings />
+        </TabsContent>
+
+        <TabsContent value="plan" className="mt-6">
+          <PlanSettings />
         </TabsContent>
       </Tabs>
     </div>

@@ -60,8 +60,8 @@ export function SignupPanel() {
             Start managing customers the easy way.
           </h1>
           <p className="max-w-md text-lg leading-relaxed text-white/85">
-            Create your free workspace in seconds. We&apos;ll help you set up your business and get
-            your first contacts in.
+            Create your workspace in seconds and try everything free for 7 days. We&apos;ll help you
+            set up your business and get your first contacts in.
           </p>
         </div>
         <p className="relative text-sm text-white/60">
@@ -80,7 +80,9 @@ export function SignupPanel() {
           <CardHeader className="text-center">
             <Logo className="mx-auto mb-2 size-11 lg:hidden" />
             <CardTitle className="text-xl">Create your account</CardTitle>
-            <CardDescription>Set up your free Nula CRM workspace.</CardDescription>
+            <CardDescription>
+              Start your 7-day free trial. No credit card required.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit}>
