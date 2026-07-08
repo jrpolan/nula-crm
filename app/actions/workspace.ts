@@ -17,6 +17,7 @@ import {
 } from "@/lib/crm-defaults"
 import { seedDefaultAutomations } from "@/lib/automations/engine"
 import { randomId } from "@/lib/library-helpers"
+import { computeTrialStatus, trialEndDate, type TrialStatus } from "@/lib/trial"
 
 export type CompanyProfile = {
   businessType: BusinessTypeId
@@ -100,6 +101,11 @@ export async function seedWorkspaceDefaults(businessType?: BusinessTypeId) {
       workspaceId,
       businessType: resolved,
       onboardingComplete: true,
+      // Start the free trial the first time a workspace row is created. The
+      // update branch below intentionally omits plan/trialEndsAt so an existing
+      // trial is never reset.
+      plan: "trial",
+      trialEndsAt: trialEndDate(),
     })
     .onConflictDoUpdate({
       target: workspaceSettings.workspaceId,
@@ -137,6 +143,38 @@ export async function getCompanyProfile(): Promise<CompanyProfile> {
   }
 }
 
+/** Current trial / plan state for the acting workspace. */
+export async function getTrialStatus(): Promise<TrialStatus> {
+  const { workspaceId } = await getActingUser()
+  const [row] = await db
+    .select({ plan: workspaceSettings.plan, trialEndsAt: workspaceSettings.trialEndsAt })
+    .from(workspaceSettings)
+    .where(eq(workspaceSettings.workspaceId, workspaceId))
+    .limit(1)
+  // No settings row yet (brand-new account pre-onboarding) → show a fresh trial.
+  if (!row) return computeTrialStatus("trial", trialEndDate())
+  return computeTrialStatus(row.plan, row.trialEndsAt)
+}
+
+/**
+ * Move the workspace off the trial onto the paid plan. Placeholder for real
+ * billing — for now an Admin can activate directly; swap this for a checkout
+ * flow when payments are wired up.
+ */
+export async function activatePlan(): Promise<TrialStatus> {
+  const { workspaceId } = await requireRole("Admin")
+  await db
+    .insert(workspaceSettings)
+    .values({ workspaceId, plan: "active", onboardingComplete: true })
+    .onConflictDoUpdate({
+      target: workspaceSettings.workspaceId,
+      set: { plan: "active", updatedAt: new Date() },
+    })
+  revalidatePath(APP_ROUTES.settings)
+  revalidatePath(APP_ROUTES.dashboard)
+  return computeTrialStatus("active", null)
+}
+
 /** @deprecated use getCompanyProfile — kept for existing callers. */
 export async function getWorkspaceSettingsInfo(): Promise<{ businessType: BusinessTypeId }> {
   const { businessType } = await getCompanyProfile()
@@ -167,6 +205,10 @@ export async function updateWorkspaceSettings(input: Partial<CompanyProfile>) {
       address: input.address?.trim() ?? "",
       timezone: input.timezone?.trim() || "America/New_York",
       onboardingComplete: true,
+      // Begin the trial when onboarding creates the workspace row. `set` omits
+      // plan/trialEndsAt so updates never reset an in-progress trial.
+      plan: "trial",
+      trialEndsAt: trialEndDate(),
     })
     .onConflictDoUpdate({ target: workspaceSettings.workspaceId, set })
     .returning()

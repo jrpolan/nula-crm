@@ -273,6 +273,8 @@ export const workspaceSettings = pgTable("workspace_settings", {
   address: text("address").notNull().default(""),
   timezone: text("timezone").notNull().default("America/New_York"),
   onboardingComplete: boolean("onboardingComplete").notNull().default(false),
+  plan: text("plan").notNull().default("trial"),
+  trialEndsAt: timestamp("trialEndsAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
