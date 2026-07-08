@@ -223,6 +223,24 @@ export const leadEvents = pgTable("lead_events", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+/** Segmentation / routing rules applied to inbound leads. */
+export const leadRoutingRules = pgTable("lead_routing_rules", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  name: text("name").notNull(),
+  priority: integer("priority").notNull().default(0),
+  enabled: boolean("enabled").notNull().default(true),
+  conditions: jsonb("conditions")
+    .$type<import("@/lib/crm-types").RoutingConditions>()
+    .notNull()
+    .default({}),
+  actions: jsonb("actions")
+    .$type<import("@/lib/crm-types").RoutingActions>()
+    .notNull()
+    .default({}),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 export const aiActions = pgTable("ai_actions", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull(),

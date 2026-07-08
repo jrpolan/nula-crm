@@ -14,6 +14,39 @@ export type LifecycleStage = (typeof LIFECYCLE_STAGES)[number]
 export const LEAD_STATUSES = ["Open", "Working", "Qualified", "Unqualified", "Converted"] as const
 export type LeadStatus = (typeof LEAD_STATUSES)[number]
 
+/** Lead routing / segmentation rules (Lead Integration module, Phase 2). */
+export type RoutingConditions = {
+  channel?: string
+  sourceKey?: string
+  minScore?: number
+  keywords?: string[]
+}
+
+export type RoutingActions = {
+  addTags?: string[]
+  addGroups?: string[]
+  setLeadStatus?: string
+  setLifecycle?: string
+}
+
+export type RoutingRule = {
+  id: string
+  name: string
+  priority: number
+  enabled: boolean
+  conditions: RoutingConditions
+  actions: RoutingActions
+  createdAt: string
+}
+
+export type RoutingOutcome = {
+  matchedRules: string[]
+  addedTags: string[]
+  addedGroups: string[]
+  leadStatus?: string
+  lifecycle?: string
+}
+
 export const CUSTOMER_STATUSES = ["Prospect", "Active", "Inactive", "Churned"] as const
 export type CustomerStatus = (typeof CUSTOMER_STATUSES)[number]
 

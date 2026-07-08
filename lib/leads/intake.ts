@@ -28,6 +28,7 @@ import {
   recordLeadEvent,
   type SourceContext,
 } from "@/lib/leads/sources"
+import { applyRoutingRules } from "@/lib/leads/routing"
 
 export const leadIntakeSchema = z.object({
   firstName: z.string().min(1),
@@ -266,6 +267,21 @@ export async function processLeadIntake(
     .insert(contactGroups)
     .values({ contactId, groupId: newLeadsGroup.id, addedBy: "lead-intake" })
     .onConflictDoNothing()
+
+  // Segmentation: apply workspace routing rules (tags/groups/status/stage).
+  await applyRoutingRules({
+    workspaceId,
+    scopeIds,
+    contactId,
+    ctx: {
+      channel: leadSource?.channel ?? "webhook",
+      sourceKey: options?.source?.key ?? source,
+      leadScore,
+      text: [payload.message, payload.notes, payload.interest, (payload.keywords ?? []).join(" ")]
+        .filter(Boolean)
+        .join(" "),
+    },
+  })
 
   await db.insert(activities).values({
     id: randomId("a"),
