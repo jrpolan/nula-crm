@@ -1,7 +1,7 @@
 "use server"
 
 import crypto from "node:crypto"
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, or } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
@@ -168,7 +168,9 @@ export async function listTeamMembers(): Promise<TeamMember[]> {
       role: userTable.role,
     })
     .from(userTable)
-    .where(eq(userTable.workspaceId, workspaceId))
+    // Include the owner (id == workspaceId) even if their workspaceId column
+    // was never self-set (self-serve owners rely on the resolver's fallback).
+    .where(or(eq(userTable.workspaceId, workspaceId), eq(userTable.id, workspaceId)))
   return rows
     .map((r) => ({
       id: r.id,
