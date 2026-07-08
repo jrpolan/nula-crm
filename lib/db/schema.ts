@@ -8,6 +8,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("emailVerified").notNull().default(false),
   image: text("image"),
   workspaceId: text("workspaceId"),
+  role: text("role").notNull().default("Admin"),
   notificationsReadAt: timestamp("notificationsReadAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
