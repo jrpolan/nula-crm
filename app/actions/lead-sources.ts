@@ -27,6 +27,10 @@ function inboundAddressFor(publicKey: string): string {
   return publicKey ? `leads+${publicKey}@${INBOUND_EMAIL_DOMAIN}` : ""
 }
 
+function callWebhookFor(publicKey: string): string {
+  return publicKey ? `${appBaseUrl()}/api/inbound/call?key=${publicKey}` : ""
+}
+
 export type LeadSourceInfo = {
   id: string
   name: string
@@ -36,6 +40,7 @@ export type LeadSourceInfo = {
   publicKey: string
   endpointUrl: string
   inboundAddress: string
+  callWebhookUrl: string
   successMessage: string
   createdAt: string
 }
@@ -58,6 +63,7 @@ function toInfo(r: Awaited<ReturnType<typeof getLeadSourcesForWorkspace>>[number
     publicKey: r.publicKey,
     endpointUrl: endpointFor(r.publicKey),
     inboundAddress: inboundAddressFor(r.publicKey),
+    callWebhookUrl: callWebhookFor(r.publicKey),
     successMessage: r.successMessage,
     createdAt: r.createdAt.toISOString(),
   }
@@ -92,6 +98,15 @@ export async function createEmailSource(input: { name: string }): Promise<LeadSo
   const name = input.name.trim()
   if (!name) throw new Error("Source name is required")
   const row = await createLeadSource(workspaceId, { name, channel: "email" })
+  revalidatePath("/app/settings")
+  return toInfo(row)
+}
+
+export async function createCallSource(input: { name: string }): Promise<LeadSourceInfo> {
+  const { workspaceId } = await requireRole("Admin")
+  const name = input.name.trim()
+  if (!name) throw new Error("Source name is required")
+  const row = await createLeadSource(workspaceId, { name, channel: "call" })
   revalidatePath("/app/settings")
   return toInfo(row)
 }
