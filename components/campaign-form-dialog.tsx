@@ -154,7 +154,7 @@ export function CampaignFormDialog({
                       onValueChange={(v) => updateStep(i, { channel: v === "sms" ? "sms" : "email" })}
                     >
                       <SelectTrigger className="h-8 w-28">
-                        <SelectValue />
+                        <SelectValue>{(value) => (value === "sms" ? "SMS" : "Email")}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="email">Email</SelectItem>
