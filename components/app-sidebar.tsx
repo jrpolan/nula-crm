@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   Users,
+  Briefcase,
   Layers,
   Tag,
   Megaphone,
@@ -49,6 +50,7 @@ import { APP_ROUTES } from "@/lib/routes"
 const mainNav = [
   { title: "Dashboard", href: APP_ROUTES.dashboard, icon: LayoutDashboard },
   { title: "Contacts", href: APP_ROUTES.contacts, icon: Users },
+  { title: "Deals", href: APP_ROUTES.deals, icon: Briefcase },
   { title: "Groups", href: APP_ROUTES.groups, icon: Layers },
   { title: "Tags", href: APP_ROUTES.tags, icon: Tag },
   { title: "Campaigns", href: APP_ROUTES.campaigns, icon: Megaphone },

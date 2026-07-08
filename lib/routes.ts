@@ -4,6 +4,7 @@ export const APP_BASE = "/app"
 export const APP_ROUTES = {
   dashboard: `${APP_BASE}/dashboard`,
   contacts: `${APP_BASE}/contacts`,
+  deals: `${APP_BASE}/deals`,
   groups: `${APP_BASE}/groups`,
   tags: `${APP_BASE}/tags`,
   campaigns: `${APP_BASE}/campaigns`,

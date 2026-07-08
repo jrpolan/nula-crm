@@ -5,9 +5,10 @@ import { PageHeader } from "@/components/page-header"
 import { ProfileSettings } from "@/components/settings/profile-settings"
 import { SecuritySettings } from "@/components/settings/security-settings"
 import { TeamSettings } from "@/components/settings/team-settings"
+import { WorkspaceSettings } from "@/components/settings/workspace-settings"
 import { useUrlTab } from "@/hooks/use-url-tab"
 
-const SETTINGS_TABS = ["profile", "security", "team"] as const
+const SETTINGS_TABS = ["profile", "security", "team", "workspace"] as const
 type SettingsTab = (typeof SETTINGS_TABS)[number]
 
 export function SettingsView() {
@@ -22,6 +23,7 @@ export function SettingsView() {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="workspace">Workspace</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">
@@ -34,6 +36,10 @@ export function SettingsView() {
 
         <TabsContent value="team" className="mt-6">
           <TeamSettings />
+        </TabsContent>
+
+        <TabsContent value="workspace" className="mt-6">
+          <WorkspaceSettings />
         </TabsContent>
       </Tabs>
     </div>

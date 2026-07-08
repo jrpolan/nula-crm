@@ -67,6 +67,7 @@ export async function createDeal(input: DealInput) {
   })
 
   revalidatePath(`${APP_ROUTES.contacts}/${input.contactId}`)
+  revalidatePath(APP_ROUTES.deals)
   return mapDeal(row, contactName)
 }
 
@@ -92,6 +93,7 @@ export async function updateDeal(dealId: string, input: Partial<DealInput>) {
   const [row] = await db.update(deals).set(patch).where(eq(deals.id, dealId)).returning()
 
   revalidatePath(`${APP_ROUTES.contacts}/${existing.contactId}`)
+  revalidatePath(APP_ROUTES.deals)
   const contact = await assertContactAccess(existing.contactId, scopeIds)
   const contactName = [contact.firstName, contact.lastName].filter(Boolean).join(" ") || contact.name
   return mapDeal(row, contactName)
@@ -109,5 +111,6 @@ export async function deleteDeal(dealId: string) {
 
   await db.delete(deals).where(eq(deals.id, dealId))
   revalidatePath(`${APP_ROUTES.contacts}/${existing.contactId}`)
+  revalidatePath(APP_ROUTES.deals)
   return { ok: true }
 }

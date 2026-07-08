@@ -21,7 +21,7 @@ import {
   mapGroup,
   mapTag,
 } from "@/lib/mappers"
-import type { Contact, DashboardStats, InboxConversation, Message, ReportData } from "@/lib/crm-types"
+import type { Contact, DashboardStats, Deal, InboxConversation, Message, ReportData } from "@/lib/crm-types"
 import { LIFECYCLE_STAGES } from "@/lib/crm-types"
 import { getWorkspaceUserLabels } from "@/lib/workspace-users"
 
@@ -267,6 +267,19 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     tagCount: tagCount[0]?.count ?? 0,
     groupCount: groupCount[0]?.count ?? 0,
   }
+}
+
+export async function getDeals(): Promise<Deal[]> {
+  const { scopeIds } = await getWorkspaceScope()
+  const rows = await db
+    .select({ deal: deals, contact: contacts })
+    .from(deals)
+    .innerJoin(contacts, eq(contacts.id, deals.contactId))
+    .where(workspaceUserIdMatches(deals.userId, scopeIds))
+    .orderBy(desc(deals.updatedAt))
+  return rows.map(({ deal, contact }) =>
+    mapDeal(deal, [contact.firstName, contact.lastName].filter(Boolean).join(" ") || contact.name),
+  )
 }
 
 export async function getReportData(): Promise<ReportData> {
