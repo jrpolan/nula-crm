@@ -6,7 +6,7 @@ import { after } from "next/server"
 
 import { db } from "@/lib/db"
 import { campaigns, contactGroups, groups, tags, workspaceSettings } from "@/lib/db/schema"
-import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingUser, requireRole, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { APP_ROUTES } from "@/lib/routes"
 import { DEFAULT_GROUPS, DEFAULT_TAGS, slugifyTag, type BusinessTypeId } from "@/lib/crm-defaults"
 import { seedDefaultAutomations } from "@/lib/automations/engine"
@@ -89,8 +89,18 @@ export async function seedWorkspaceDefaults(businessType: BusinessTypeId = "iv-t
   return { ok: true, seeded: true }
 }
 
-export async function updateWorkspaceSettings(input: { businessType?: BusinessTypeId }) {
+export async function getWorkspaceSettingsInfo(): Promise<{ businessType: BusinessTypeId }> {
   const { workspaceId } = await getActingUser()
+  const [row] = await db
+    .select()
+    .from(workspaceSettings)
+    .where(eq(workspaceSettings.workspaceId, workspaceId))
+    .limit(1)
+  return { businessType: (row?.businessType ?? "iv-therapy") as BusinessTypeId }
+}
+
+export async function updateWorkspaceSettings(input: { businessType?: BusinessTypeId }) {
+  const { workspaceId } = await requireRole("Admin")
 
   const [row] = await db
     .insert(workspaceSettings)
