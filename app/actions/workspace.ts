@@ -1,11 +1,11 @@
 "use server"
 
-import { and, eq } from "drizzle-orm"
+import { and, eq, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
 
 import { db } from "@/lib/db"
-import { campaigns, contactGroups, groups, tags, workspaceSettings } from "@/lib/db/schema"
+import { campaigns, contactGroups, contactTags, groups, tags, workspaceSettings } from "@/lib/db/schema"
 import { getActingUser, requireOwner, requireRole, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { APP_ROUTES } from "@/lib/routes"
 import {
@@ -75,6 +75,48 @@ async function seedGroupsAndTags(
       })
     }
   }
+}
+
+/**
+ * Replace the workspace's contact tags with the default set for its business
+ * type (the cross-business "general" set unless another industry is chosen).
+ * Destructive: removes all existing tags and their contact associations, then
+ * seeds the defaults fresh. Admin-only.
+ */
+export async function resetTagsToDefaults(): Promise<{ removed: number; added: number }> {
+  const { workspaceId, scopeIds } = await requireRole("Admin")
+
+  const [ws] = await db
+    .select({ businessType: workspaceSettings.businessType })
+    .from(workspaceSettings)
+    .where(eq(workspaceSettings.workspaceId, workspaceId))
+    .limit(1)
+  const businessType = (ws?.businessType as BusinessTypeId) ?? DEFAULT_BUSINESS_TYPE
+
+  const existing = await db
+    .select({ id: tags.id })
+    .from(tags)
+    .where(workspaceUserIdMatches(tags.userId, scopeIds))
+  const ids = existing.map((t) => t.id)
+  if (ids.length > 0) {
+    await db.delete(contactTags).where(inArray(contactTags.tagId, ids))
+    await db.delete(tags).where(inArray(tags.id, ids))
+  }
+
+  const tagNames = DEFAULT_TAGS[businessType] ?? DEFAULT_TAGS[DEFAULT_BUSINESS_TYPE]
+  for (const name of tagNames) {
+    await db.insert(tags).values({
+      id: randomId("t"),
+      userId: workspaceId,
+      name,
+      slug: slugifyTag(name),
+      description: "Default tag",
+    })
+  }
+
+  revalidatePath(APP_ROUTES.tags)
+  revalidatePath(APP_ROUTES.contacts)
+  return { removed: ids.length, added: tagNames.length }
 }
 
 export async function seedWorkspaceDefaults(businessType?: BusinessTypeId) {
