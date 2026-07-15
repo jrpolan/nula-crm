@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building2, Globe, Mail, MapPin, MapPinned, Pencil, Phone, Plus, Trash2, UserRound } from "lucide-react"
+import { Building2, Globe, Mail, MapPin, MapPinned, Merge, Pencil, Phone, Plus, Trash2, UserRound } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -19,6 +19,7 @@ import {
 import { LifecycleBadge } from "@/components/lifecycle-badge"
 import { CompanyFormDialog } from "@/components/company-form-dialog"
 import { LocationFormDialog } from "@/components/location-form-dialog"
+import { MergeCompanyDialog } from "@/components/merge-company-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { deleteLocation } from "@/app/actions/locations"
 import {
@@ -45,6 +46,7 @@ export function CompanyDetailView({
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [mergeOpen, setMergeOpen] = useState(false)
   const [addLocationOpen, setAddLocationOpen] = useState(false)
   const [editLocation, setEditLocation] = useState<Location | null>(null)
   const [deleteLocationTarget, setDeleteLocationTarget] = useState<Location | null>(null)
@@ -150,6 +152,10 @@ export function CompanyDetailView({
             <Button variant="outline" onClick={() => setEditOpen(true)}>
               <Pencil data-icon="inline-start" />
               Edit
+            </Button>
+            <Button variant="outline" onClick={() => setMergeOpen(true)}>
+              <Merge data-icon="inline-start" />
+              Merge
             </Button>
             <Button variant="outline" onClick={() => setDeleteOpen(true)}>
               <Trash2 data-icon="inline-start" />
@@ -294,6 +300,7 @@ export function CompanyDetailView({
       </div>
 
       <CompanyFormDialog open={editOpen} onOpenChange={setEditOpen} company={company} />
+      <MergeCompanyDialog open={mergeOpen} onOpenChange={setMergeOpen} company={company} />
       <LocationFormDialog open={addLocationOpen} onOpenChange={setAddLocationOpen} companyId={company.id} />
       {editLocation ? (
         <LocationFormDialog

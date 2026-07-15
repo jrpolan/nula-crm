@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building2, Globe, MapPin, MoreHorizontal, Pencil, Plus, Trash2, Users } from "lucide-react"
+import { Building2, Globe, MapPin, MoreHorizontal, Pencil, Plus, Sparkles, Trash2, Users } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -17,16 +17,36 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CompanyFormDialog } from "@/components/company-form-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
-import { deleteCompany } from "@/app/actions/companies"
+import { backfillCompaniesFromContacts, deleteCompany } from "@/app/actions/companies"
 import { companyPath } from "@/lib/routes"
 import type { Company } from "@/lib/crm-types"
 
-export function CompaniesView({ companies }: { companies: Company[] }) {
+export function CompaniesView({
+  companies,
+  unlinkedCount,
+}: {
+  companies: Company[]
+  unlinkedCount: number
+}) {
   const router = useRouter()
   const [addOpen, setAddOpen] = useState(false)
   const [editCompany, setEditCompany] = useState<Company | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null)
+  const [backfilling, setBackfilling] = useState(false)
   const [, startTransition] = useTransition()
+
+  async function handleBackfill() {
+    setBackfilling(true)
+    try {
+      const { created, linked } = await backfillCompaniesFromContacts()
+      toast.success(`Linked ${linked} ${linked === 1 ? "contact" : "contacts"} to ${created} ${created === 1 ? "company" : "companies"}`)
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not link companies")
+    } finally {
+      setBackfilling(false)
+    }
+  }
 
   function handleDelete(company: Company) {
     startTransition(async () => {
@@ -53,6 +73,23 @@ export function CompaniesView({ companies }: { companies: Company[] }) {
           </Button>
         }
       />
+
+      {unlinkedCount > 0 ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="flex flex-col items-start justify-between gap-3 py-4 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 text-sm">
+              <Sparkles className="size-4 text-primary" />
+              <span>
+                {unlinkedCount} {unlinkedCount === 1 ? "contact has" : "contacts have"} a company name
+                that isn&apos;t linked to a company record yet.
+              </span>
+            </div>
+            <Button onClick={handleBackfill} disabled={backfilling}>
+              {backfilling ? "Linking…" : "Create & link companies"}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {companies.length === 0 ? (
         <Card>
