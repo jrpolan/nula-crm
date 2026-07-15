@@ -92,7 +92,7 @@ export async function getContacts(search?: string): Promise<Contact[]> {
     mapContact(row, {
       tags: tagMap.get(row.id) ?? [],
       groups: groupMap.get(row.id) ?? [],
-      ownerName: labelForUserId(labels, row.ownerId),
+      ownerName: row.ownerId ? labelForUserId(labels, row.ownerId) : "",
     }),
   )
 }
@@ -113,7 +113,7 @@ export async function getContactById(id: string): Promise<Contact | null> {
   return mapContact(row, {
     tags: tagMap.get(id) ?? [],
     groups: groupMap.get(id) ?? [],
-    ownerName: labelForUserId(labels, row.ownerId),
+    ownerName: row.ownerId ? labelForUserId(labels, row.ownerId) : "",
   })
 }
 
