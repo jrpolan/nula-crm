@@ -22,16 +22,41 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { deleteContact } from "@/app/actions/contacts"
 import { Building2, Mail, Phone, UserRound } from "lucide-react"
-import { type Contact } from "@/lib/crm-types"
+import { type Company, type Contact } from "@/lib/crm-types"
 import { APP_ROUTES, contactPath } from "@/lib/routes"
 
-export function ContactsView({ contacts }: { contacts: Contact[] }) {
+const ALL_COMPANIES = "__all__"
+
+export function ContactsView({
+  contacts,
+  companies,
+  selectedCompanyId,
+}: {
+  contacts: Contact[]
+  companies: Company[]
+  selectedCompanyId: string
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentQuery = searchParams.get("q") ?? ""
   const [search, setSearch] = useState(currentQuery)
+
+  function pushParams(nextQuery: string, nextCompanyId: string) {
+    const params = new URLSearchParams()
+    if (nextQuery.trim()) params.set("q", nextQuery.trim())
+    if (nextCompanyId) params.set("company", nextCompanyId)
+    const qs = params.toString()
+    router.push(qs ? `${APP_ROUTES.contacts}?${qs}` : APP_ROUTES.contacts)
+  }
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editContact, setEditContact] = useState<Contact | null>(null)
@@ -41,13 +66,11 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
   useEffect(() => {
     const handle = setTimeout(() => {
       if (search.trim() === currentQuery) return
-      const params = new URLSearchParams()
-      if (search.trim()) params.set("q", search.trim())
-      const qs = params.toString()
-      router.push(qs ? `${APP_ROUTES.contacts}?${qs}` : APP_ROUTES.contacts)
+      pushParams(search, selectedCompanyId)
     }, 300)
     return () => clearTimeout(handle)
-  }, [search, currentQuery, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, currentQuery])
 
   function handleDelete(contact: Contact) {
     startTransition(async () => {
@@ -81,15 +104,41 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
         }
       />
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name, email, or phone…"
-          className="h-10 pl-9"
-          aria-label="Search contacts"
-        />
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name, email, company, or phone…"
+            className="h-10 pl-9"
+            aria-label="Search contacts"
+          />
+        </div>
+        {companies.length > 0 ? (
+          <Select
+            value={selectedCompanyId || ALL_COMPANIES}
+            onValueChange={(v) => pushParams(search, !v || v === ALL_COMPANIES ? "" : v)}
+          >
+            <SelectTrigger className="h-10 sm:w-56" aria-label="Filter by company">
+              <SelectValue>
+                {(v: string) =>
+                  !v || v === ALL_COMPANIES
+                    ? "All companies"
+                    : companies.find((c) => c.id === v)?.name ?? "All companies"
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_COMPANIES}>All companies</SelectItem>
+              {companies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
       </div>
 
       {contacts.length === 0 ? (

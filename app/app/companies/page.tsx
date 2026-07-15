@@ -1,5 +1,5 @@
 import { CompaniesView } from "./companies-view"
-import { getCompanies } from "@/lib/queries"
+import { countUnlinkedCompanyContacts, getCompanies } from "@/lib/queries"
 import { appPageMetadata } from "@/lib/seo"
 import { APP_ROUTES } from "@/lib/routes"
 
@@ -12,6 +12,9 @@ export const metadata = appPageMetadata(
 export const dynamic = "force-dynamic"
 
 export default async function CompaniesPage() {
-  const companies = await getCompanies()
-  return <CompaniesView companies={companies} />
+  const [companies, unlinkedCount] = await Promise.all([
+    getCompanies(),
+    countUnlinkedCompanyContacts(),
+  ])
+  return <CompaniesView companies={companies} unlinkedCount={unlinkedCount} />
 }

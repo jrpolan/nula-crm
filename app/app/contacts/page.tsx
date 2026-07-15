@@ -1,5 +1,5 @@
 import { ContactsView } from "./contacts-view"
-import { getContacts } from "@/lib/queries"
+import { getCompanies, getContacts } from "@/lib/queries"
 import { appPageMetadata } from "@/lib/seo"
 import { APP_ROUTES } from "@/lib/routes"
 
@@ -14,9 +14,9 @@ export const dynamic = "force-dynamic"
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; company?: string }>
 }) {
-  const { q } = await searchParams
-  const contacts = await getContacts(q)
-  return <ContactsView contacts={contacts} />
+  const { q, company } = await searchParams
+  const [contacts, companies] = await Promise.all([getContacts(q, company), getCompanies()])
+  return <ContactsView contacts={contacts} companies={companies} selectedCompanyId={company ?? ""} />
 }

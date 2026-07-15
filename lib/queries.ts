@@ -13,7 +13,7 @@ import {
   tags,
   workspaceSettings,
 } from "@/lib/db/schema"
-import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm"
+import { and, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm"
 import { getWorkspaceScope, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import {
   mapActivity,
@@ -77,20 +77,25 @@ async function loadContactRelations(contactIds: string[], scopeIds: string[]) {
   return { tagMap, groupMap }
 }
 
-export async function getContacts(search?: string): Promise<Contact[]> {
+export async function getContacts(search?: string, companyId?: string): Promise<Contact[]> {
   const { scopeIds } = await getWorkspaceScope()
-  const where = search?.trim()
-    ? and(
-        workspaceUserIdMatches(contacts.userId, scopeIds),
-        or(
-          ilike(contacts.firstName, `%${search}%`),
-          ilike(contacts.lastName, `%${search}%`),
-          ilike(contacts.email, `%${search}%`),
-          ilike(contacts.phone, `%${search}%`),
-          ilike(contacts.name, `%${search}%`),
-        ),
-      )
-    : workspaceUserIdMatches(contacts.userId, scopeIds)
+  const conditions = [workspaceUserIdMatches(contacts.userId, scopeIds)]
+  if (search?.trim()) {
+    conditions.push(
+      or(
+        ilike(contacts.firstName, `%${search}%`),
+        ilike(contacts.lastName, `%${search}%`),
+        ilike(contacts.email, `%${search}%`),
+        ilike(contacts.phone, `%${search}%`),
+        ilike(contacts.name, `%${search}%`),
+        ilike(contacts.companyName, `%${search}%`),
+      )!,
+    )
+  }
+  if (companyId?.trim()) {
+    conditions.push(eq(contacts.companyId, companyId))
+  }
+  const where = and(...conditions)
 
   const rows = await db.select().from(contacts).where(where).orderBy(desc(contacts.createdAt))
   const [{ tagMap, groupMap }, labels, locMap] = await Promise.all([
@@ -151,6 +156,22 @@ export async function getCompanies(): Promise<Company[]> {
 
   const countMap = new Map(counts.map((r) => [r.companyId, r.count]))
   return companyRows.map((c) => mapCompany(c, countMap.get(c.id) ?? 0))
+}
+
+/** Contacts that have a free-text company name but aren't linked to a company record. */
+export async function countUnlinkedCompanyContacts(): Promise<number> {
+  const { scopeIds } = await getWorkspaceScope()
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(contacts)
+    .where(
+      and(
+        workspaceUserIdMatches(contacts.userId, scopeIds),
+        eq(contacts.companyId, ""),
+        ne(contacts.companyName, ""),
+      ),
+    )
+  return row?.count ?? 0
 }
 
 export async function getCompanyById(id: string): Promise<Company | null> {

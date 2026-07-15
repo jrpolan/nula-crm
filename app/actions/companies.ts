@@ -1,10 +1,10 @@
 "use server"
 
-import { and, eq } from "drizzle-orm"
+import { and, eq, inArray, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
-import { companies, contacts } from "@/lib/db/schema"
+import { companies, contacts, locations } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { randomId } from "@/lib/library-helpers"
 import { mapCompany } from "@/lib/mappers"
@@ -90,6 +90,93 @@ export async function updateCompany(id: string, input: Partial<CompanyInput>): P
   revalidatePath(companyPath(id))
   revalidatePath(APP_ROUTES.contacts)
   return mapCompany(row, 0)
+}
+
+/**
+ * Create company records from contacts that have a free-text company name but no
+ * linked company, and link those contacts. Existing companies are matched by
+ * name (case-insensitive) so we don't create duplicates.
+ */
+export async function backfillCompaniesFromContacts(): Promise<{ created: number; linked: number }> {
+  const { workspaceId, scopeIds } = await getActingUser()
+
+  const rows = await db
+    .select({ id: contacts.id, companyName: contacts.companyName })
+    .from(contacts)
+    .where(
+      and(
+        workspaceUserIdMatches(contacts.userId, scopeIds),
+        eq(contacts.companyId, ""),
+        ne(contacts.companyName, ""),
+      ),
+    )
+  if (rows.length === 0) return { created: 0, linked: 0 }
+
+  const existing = await db
+    .select({ id: companies.id, name: companies.name })
+    .from(companies)
+    .where(workspaceUserIdMatches(companies.userId, scopeIds))
+  const byName = new Map(existing.map((c) => [c.name.trim().toLowerCase(), c.id]))
+
+  const groups = new Map<string, { name: string; ids: string[] }>()
+  for (const r of rows) {
+    const key = r.companyName.trim().toLowerCase()
+    if (!key) continue
+    const g = groups.get(key) ?? { name: r.companyName.trim(), ids: [] }
+    g.ids.push(r.id)
+    groups.set(key, g)
+  }
+
+  let created = 0
+  let linked = 0
+  for (const [key, group] of groups) {
+    let companyId = byName.get(key)
+    if (!companyId) {
+      const [row] = await db
+        .insert(companies)
+        .values({ id: randomId("co"), userId: workspaceId, name: group.name })
+        .returning()
+      companyId = row.id
+      byName.set(key, companyId)
+      created++
+    }
+    await db
+      .update(contacts)
+      .set({ companyId })
+      .where(and(inArray(contacts.id, group.ids), workspaceUserIdMatches(contacts.userId, scopeIds)))
+    linked += group.ids.length
+  }
+
+  revalidatePath(APP_ROUTES.companies)
+  revalidatePath(APP_ROUTES.contacts)
+  return { created, linked }
+}
+
+/** Merge one company into another: move its contacts + locations, then delete it. */
+export async function mergeCompany(sourceId: string, targetId: string): Promise<{ ok: true }> {
+  const { scopeIds } = await getActingUser()
+  if (!sourceId || !targetId || sourceId === targetId) {
+    throw new Error("Pick a different company to merge into.")
+  }
+  await assertCompanyAccess(sourceId, scopeIds)
+  const target = await assertCompanyAccess(targetId, scopeIds)
+
+  await db
+    .update(contacts)
+    .set({ companyId: targetId, companyName: target.name })
+    .where(and(eq(contacts.companyId, sourceId), workspaceUserIdMatches(contacts.userId, scopeIds)))
+  await db
+    .update(locations)
+    .set({ companyId: targetId })
+    .where(and(eq(locations.companyId, sourceId), workspaceUserIdMatches(locations.userId, scopeIds)))
+  await db
+    .delete(companies)
+    .where(and(eq(companies.id, sourceId), workspaceUserIdMatches(companies.userId, scopeIds)))
+
+  revalidatePath(APP_ROUTES.companies)
+  revalidatePath(companyPath(targetId))
+  revalidatePath(APP_ROUTES.contacts)
+  return { ok: true }
 }
 
 export async function deleteCompany(id: string): Promise<{ ok: true; name: string }> {
