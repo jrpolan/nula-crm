@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { Loader2, Save } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Loader2, RotateCcw, Save } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -16,8 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import {
   getCompanyProfile,
+  resetTagsToDefaults,
   updateWorkspaceSettings,
   type CompanyProfile,
 } from "@/app/actions/workspace"
@@ -27,10 +30,23 @@ import { canManageSettings } from "@/lib/roles"
 
 export function WorkspaceSettings() {
   const me = useSessionUser()
+  const router = useRouter()
   const isAdmin = canManageSettings(me.role)
   const { data, isLoading, mutate } = useSWR("company-profile", () => getCompanyProfile())
   const [edits, setEdits] = useState<Partial<CompanyProfile>>({})
   const [saving, setSaving] = useState(false)
+  const [resetOpen, setResetOpen] = useState(false)
+
+  async function handleResetTags() {
+    try {
+      const { removed, added } = await resetTagsToDefaults()
+      toast.success(`Reset tags — removed ${removed}, added ${added} default tags`)
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not reset tags")
+      throw err
+    }
+  }
 
   function text(field: keyof CompanyProfile): string {
     return (edits[field] ?? data?.[field] ?? "") as string
@@ -172,7 +188,36 @@ export function WorkspaceSettings() {
             Save
           </Button>
         ) : null}
+
+        {isAdmin ? (
+          <div className="mt-2 flex flex-col gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+            <p className="text-sm font-medium">Reset contact tags</p>
+            <p className="text-sm text-muted-foreground">
+              Replace all existing contact tags with the default set for your industry
+              ({BUSINESS_TYPES.find((b) => b.id === businessType)?.label ?? "General"}). This removes
+              your current tags (including any applied to contacts) and can&apos;t be undone.
+            </p>
+            <Button
+              variant="outline"
+              className="w-fit"
+              onClick={() => setResetOpen(true)}
+              disabled={isLoading}
+            >
+              <RotateCcw data-icon="inline-start" />
+              Reset tags to defaults
+            </Button>
+          </div>
+        ) : null}
       </CardContent>
+
+      <ConfirmDeleteDialog
+        open={resetOpen}
+        onOpenChange={setResetOpen}
+        title="Reset tags to defaults?"
+        description="This permanently removes all current contact tags (including ones applied to contacts) and replaces them with the default set for your industry. This can't be undone."
+        confirmLabel="Reset tags"
+        onConfirm={handleResetTags}
+      />
     </Card>
   )
 }

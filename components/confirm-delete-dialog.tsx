@@ -19,12 +19,14 @@ export function ConfirmDeleteDialog({
   title,
   description,
   onConfirm,
+  confirmLabel = "Delete",
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
   description: string
   onConfirm: () => Promise<void>
+  confirmLabel?: string
 }) {
   const [deleting, setDeleting] = useState(false)
 
@@ -51,7 +53,7 @@ export function ConfirmDeleteDialog({
           </Button>
           <Button variant="destructive" onClick={handleConfirm} disabled={deleting}>
             {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-            Delete
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
