@@ -58,12 +58,16 @@ export function PlanSettings() {
   async function handleSubscribe(plan: PlanOption) {
     setBusy(plan.id)
     try {
-      const { url } = await createCheckout(plan.id)
-      window.location.assign(url)
+      const res = await createCheckout(plan.id)
+      if (res.url) {
+        window.location.assign(res.url)
+        return
+      }
+      toast.error(res.error || "Could not start checkout")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start checkout")
-      setBusy(null)
     }
+    setBusy(null)
   }
 
   async function handleManage() {

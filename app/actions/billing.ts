@@ -87,26 +87,34 @@ function appOrigin(h: Headers): string {
   return `${proto}://${host}`
 }
 
-/** Create a Square-hosted checkout for a plan and return its URL. Owner-only. */
-export async function createCheckout(planId: string): Promise<{ url: string }> {
+/**
+ * Create a Square-hosted checkout for a plan. Owner-only. Returns the URL on
+ * success or a human-readable error (returned as data so it survives to the
+ * client, unlike a thrown server-action error which prod redacts).
+ */
+export async function createCheckout(planId: string): Promise<{ url?: string; error?: string }> {
   const { user } = await requireOwner()
-  if (!isBillingConfigured()) throw new Error("Billing isn't set up yet.")
+  if (!isBillingConfigured()) return { error: "Billing isn't set up yet." }
 
   const plan = planById(planId)
-  if (!plan || !plan.priceId) throw new Error("That plan isn't available.")
+  if (!plan || !plan.priceId) return { error: "That plan isn't available." }
 
-  const origin = appOrigin(await headers())
-  // Accept either a plan variation id or a plan id in config; resolve to the
-  // variation id the Checkout API requires.
-  const planVariationId = await resolvePlanVariationId(plan.priceId, plan.interval)
-  const { url } = await createSubscriptionPaymentLink({
-    planVariationId,
-    amountCents: plan.amount,
-    planName: `${plan.name} (${plan.interval === "year" ? "annual" : "monthly"})`,
-    buyerEmail: user.email,
-    redirectUrl: `${origin}/app/settings?tab=plan&checkout=success`,
-  })
-  return { url }
+  try {
+    const origin = appOrigin(await headers())
+    // Accept either a plan variation id or a plan id in config; resolve to the
+    // variation id the Checkout API requires.
+    const planVariationId = await resolvePlanVariationId(plan.priceId, plan.interval)
+    const { url } = await createSubscriptionPaymentLink({
+      planVariationId,
+      amountCents: plan.amount,
+      planName: `${plan.name} (${plan.interval === "year" ? "annual" : "monthly"})`,
+      buyerEmail: user.email,
+      redirectUrl: `${origin}/app/settings?tab=plan&checkout=success`,
+    })
+    return { url }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not start checkout" }
+  }
 }
 
 /** Cancel the workspace's Square subscription (at period end). Owner-only. */
