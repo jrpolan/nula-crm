@@ -81,6 +81,45 @@ export async function createSubscriptionPaymentLink(params: {
   return { url, orderId: data.payment_link?.order_id ?? "" }
 }
 
+type CatalogVariation = {
+  id: string
+  subscription_plan_variation_data?: { phases?: Array<{ cadence?: string }> }
+}
+type CatalogObject = {
+  id: string
+  type: string
+  subscription_plan_data?: { subscription_plan_variations?: CatalogVariation[] }
+}
+
+/**
+ * Resolve a Square subscription plan *variation* id from a configured id, which
+ * may be either the variation id (correct) or the parent plan id (a common
+ * mix-up). Checkout requires the variation id. Picks the variation whose cadence
+ * matches the plan interval when a plan id is given.
+ */
+export async function resolvePlanVariationId(
+  configuredId: string,
+  interval: "month" | "year",
+): Promise<string> {
+  if (!configuredId) throw new Error("No plan configured.")
+  const data = await squareFetch<{ object?: CatalogObject }>(
+    `/v2/catalog/object/${configuredId}?include_related_objects=true`,
+  )
+  const obj = data.object
+  if (!obj) throw new Error("Square plan not found.")
+  if (obj.type === "SUBSCRIPTION_PLAN_VARIATION") return obj.id
+  if (obj.type === "SUBSCRIPTION_PLAN") {
+    const variations = obj.subscription_plan_data?.subscription_plan_variations ?? []
+    if (variations.length === 0) throw new Error("Square plan has no variations.")
+    const desired = interval === "year" ? "ANNUAL" : "MONTHLY"
+    const match = variations.find((v) =>
+      (v.subscription_plan_variation_data?.phases ?? []).some((p) => p.cadence === desired),
+    )
+    return (match ?? variations[0]).id
+  }
+  throw new Error(`Unexpected Square catalog object type: ${obj.type}`)
+}
+
 export type SquareSubscription = {
   id: string
   status: string
