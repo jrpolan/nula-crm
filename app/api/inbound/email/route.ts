@@ -140,11 +140,30 @@ export async function POST(request: NextRequest) {
     ...collectStrings(data.To),
     ...collectStrings(data.cc),
     ...collectStrings(data.Cc),
+    // BCC is normally stripped from headers, but include it if the provider
+    // surfaces it (some do) so a BCC'd dropbox address is still recognized.
+    ...collectStrings(data.bcc),
+    ...collectStrings(data.Bcc),
     ...collectStrings((data.envelope as Record<string, unknown> | undefined)?.to),
   ]
   const token =
     firstToken(recipients) || str(new URL(request.url).searchParams.get("key"))
+
+  // Observability: one concise line per inbound so we can trace delivery,
+  // address routing, and processing outcome in the logs.
+  console.log(
+    "[inbound/email]",
+    JSON.stringify({
+      isResend,
+      keys: Object.keys(data),
+      recipients,
+      tokenLen: token.length,
+      hasFrom: Boolean(first(data, ["from", "sender", "From"])),
+    }),
+  )
+
   if (!token) {
+    console.warn("[inbound/email] no token in recipients — returning 404")
     return NextResponse.json({ ok: false, error: "Unknown inbound address" }, { status: 404 })
   }
 
@@ -184,8 +203,10 @@ export async function POST(request: NextRequest) {
         { fromEmail: email, fromName: name, recipientEmails, subject, body: bodyText, externalId },
         connection,
       )
+      console.log("[inbound/email] mailbox", JSON.stringify({ from: email, recipientEmails, result }))
       return NextResponse.json({ ok: true, ...result })
     } catch (err) {
+      console.error("[inbound/email] mailbox error", err)
       return NextResponse.json(
         { ok: false, error: err instanceof Error ? err.message : "Could not log email" },
         { status: 400 },
@@ -196,6 +217,10 @@ export async function POST(request: NextRequest) {
   // Otherwise this is a lead-source inbound address.
   const source = await resolveSourceByPublicKey(token)
   if (!source || !source.enabled) {
+    console.warn(
+      "[inbound/email] token matched neither a mailbox connection nor an enabled lead source",
+      JSON.stringify({ tokenLen: token.length }),
+    )
     return NextResponse.json({ ok: false, error: "Unknown inbound address" }, { status: 404 })
   }
   const workspaceId = source.userId
