@@ -11,6 +11,7 @@ import {
   cancelSquareSubscription,
   createSubscriptionPaymentLink,
   isBillingConfigured,
+  resolvePlanVariationId,
 } from "@/lib/square"
 import { availablePlans, formatPrice, planById, planByPriceId } from "@/lib/billing/plans"
 
@@ -95,8 +96,11 @@ export async function createCheckout(planId: string): Promise<{ url: string }> {
   if (!plan || !plan.priceId) throw new Error("That plan isn't available.")
 
   const origin = appOrigin(await headers())
+  // Accept either a plan variation id or a plan id in config; resolve to the
+  // variation id the Checkout API requires.
+  const planVariationId = await resolvePlanVariationId(plan.priceId, plan.interval)
   const { url } = await createSubscriptionPaymentLink({
-    planVariationId: plan.priceId,
+    planVariationId,
     amountCents: plan.amount,
     planName: `${plan.name} (${plan.interval === "year" ? "annual" : "monthly"})`,
     buyerEmail: user.email,
