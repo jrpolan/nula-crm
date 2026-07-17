@@ -14,7 +14,7 @@ import { EditContactDialog } from "@/components/edit-contact-dialog"
 import { CsvImportDialog } from "@/components/csv-import-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { TagBadge } from "@/components/tag-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   DropdownMenu,
@@ -215,10 +215,8 @@ export function ContactsView({
                 ) : null}
                 {contact.tags.length > 0 ? (
                   <div className="flex flex-wrap gap-1 pt-1">
-                    {contact.tags.slice(0, 3).map((t) => (
-                      <Badge key={t.id} variant="secondary" className="text-xs">
-                        {t.name}
-                      </Badge>
+                    {contact.tags.slice(0, 5).map((t) => (
+                      <TagBadge key={t.id} name={t.name} color={t.color} />
                     ))}
                   </div>
                 ) : null}
