@@ -157,6 +157,24 @@
   color: #8f83ff;
 }
 
+/*
+ * Tag chips use the tag's own color. Mix the tint/border/text toward the ink
+ * color in light mode and toward white in dark mode so the chip stays legible
+ * on either background for any picked color (was invisible in dark before, since
+ * the text mixed toward the dark background).
+ */
+.tag-badge {
+  background-color: color-mix(in srgb, var(--tag-color) 14%, transparent);
+  border-color: color-mix(in srgb, var(--tag-color) 45%, transparent);
+  color: color-mix(in srgb, var(--tag-color) 62%, #1b1533);
+}
+
+.dark .tag-badge {
+  background-color: color-mix(in srgb, var(--tag-color) 26%, transparent);
+  border-color: color-mix(in srgb, var(--tag-color) 60%, transparent);
+  color: color-mix(in srgb, var(--tag-color) 40%, #ffffff);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
