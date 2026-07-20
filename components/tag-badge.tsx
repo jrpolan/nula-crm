@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -26,21 +27,20 @@ export function TagBadge({
   return (
     <span
       className={cn(
-        "inline-flex h-5 items-center gap-1 rounded-full border px-2 text-xs font-medium",
+        "tag-badge inline-flex h-5 items-center gap-1 rounded-full border px-2 text-xs font-medium",
         className,
       )}
-      style={{
-        backgroundColor: `color-mix(in srgb, ${c} 14%, transparent)`,
-        borderColor: `color-mix(in srgb, ${c} 45%, transparent)`,
-        color: `color-mix(in srgb, ${c} 62%, #1b1533)`,
-      }}
+      // The tint/border/text mixes are theme-aware in globals.css `.tag-badge`
+      // (mix toward ink in light mode, toward white in dark) so the chip stays
+      // legible on both backgrounds for any tag color.
+      style={{ "--tag-color": c } as CSSProperties}
     >
       <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: c }} />
       {name}
       {onRemove ? (
         <button
           type="button"
-          className="-mr-1 rounded-sm p-0.5 hover:bg-black/10"
+          className="-mr-1 rounded-sm p-0.5 hover:bg-foreground/15"
           disabled={removeDisabled}
           onClick={onRemove}
           aria-label={`Remove ${name}`}
